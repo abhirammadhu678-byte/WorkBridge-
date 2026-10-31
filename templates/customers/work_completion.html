@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Completion Verification - WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer_portal.css' %}">
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    {% include "components/navbar_customer.html" %}
+
+    <!-- MAIN CONTAINER -->
+    <main class="portal-container" style="max-width: 800px;">
+
+        <!-- FLASH MESSAGES -->
+        {% include "components/alerts.html" %}
+
+        {% if error %}
+            <div class="alert-item alert-error">
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <!-- WORK COMPLETION CARD -->
+        <div class="portal-card" style="padding: 36px;">
+            <div class="portal-card-header" style="border-bottom: 2px solid var(--slate-100); padding-bottom: 20px; margin-bottom: 24px;">
+                <div>
+                    <h1 class="page-header-title" style="font-size: 26px;">📝 Mark Work Completed</h1>
+                    <p class="page-header-subtitle">
+                        Confirm the work execution status for hired student candidates before providing their rating and review.
+                    </p>
+                </div>
+            </div>
+
+            <!-- JOB & STUDENT SUMMARY CARD -->
+            <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 20px; margin-bottom: 28px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--slate-400); letter-spacing: 0.5px;">Job Title</span>
+                        <h3 style="font-size: 18px; font-weight: 700; color: var(--slate-900); margin: 2px 0 6px;">{{ job.job_title }}</h3>
+                        <div style="font-size: 13px; color: var(--slate-600); display: flex; gap: 14px; flex-wrap: wrap;">
+                            <span>📍 {{ job.location }}</span>
+                            <span>⏱️ {{ job.work_duration }}</span>
+                            <span>📅 Scheduled: {{ job.work_date|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--slate-200);">
+                        <div class="avatar-circle">
+                            {% if student.full_name %}
+                                {{ student.full_name|slice:":1"|upper }}
+                            {% elif student.user %}
+                                {{ student.user.username|slice:":1"|upper }}
+                            {% else %}
+                                S
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--slate-400); text-transform: uppercase; font-weight: 700;">Hired Student</div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--slate-900);">
+                                {% if student.full_name %}
+                                    {{ student.full_name }}
+                                {% elif student.user %}
+                                    {{ student.user.username }}
+                                {% else %}
+                                    Student
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPLETION FORM -->
+            <form method="POST" id="workCompletionForm" novalidate>
+                {% csrf_token %}
+
+                <!-- COMPLETION DATE -->
+                <div class="form-group">
+                    <label class="form-label" for="completion_date">
+                        Completion Date <span class="required-star">*</span>
+                    </label>
+                    <input type="date" 
+                           id="completion_date" 
+                           name="completion_date" 
+                           class="form-input" 
+                           value="{{ today_date }}"
+                           max="{{ today_date }}"
+                           required>
+                    <span class="form-helper">The date on which the student concluded the assigned work.</span>
+                    <div class="field-error" id="date-error"></div>
+                </div>
+
+                <!-- WORK STATUS -->
+                <div class="form-group">
+                    <label class="form-label" for="work_status">
+                        Work Outcome Status <span class="required-star">*</span>
+                    </label>
+                    <select id="work_status" name="work_status" class="form-select" required>
+                        <option value="Completed" selected>✅ Completed (Successfully finished all requirements)</option>
+                        <option value="Partially Completed">⚠️ Partially Completed (Some requirements fulfilled)</option>
+                        <option value="Not Completed">❌ Not Completed (Task was incomplete or cancelled)</option>
+                    </select>
+                    <div class="field-error" id="status-error"></div>
+                </div>
+
+                <!-- REMARKS -->
+                <div class="form-group">
+                    <label class="form-label" for="remarks">
+                        Remarks & Performance Notes
+                    </label>
+                    <textarea id="remarks" 
+                              name="remarks" 
+                              rows="5" 
+                              class="form-textarea"
+                              placeholder="Describe how the work went, key milestones completed, quality of output, and any observations..."></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <span class="form-helper">Required if the work was partially completed or not completed.</span>
+                        <span id="remarksCounter" style="font-size: 12px; color: var(--slate-400);">0 / 1000</span>
+                    </div>
+                    <div class="field-error" id="remarks-error"></div>
+                </div>
+
+                <!-- FORM ERROR BANNER (JS) -->
+                <div id="form-errors" class="alert-item alert-error" style="display: none; margin-bottom: 20px;"></div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="display: flex; gap: 14px; align-items: center; margin-top: 32px; border-top: 1px solid var(--slate-100); padding-top: 24px;">
+                    <button type="submit" class="btn btn-primary btn-lg" style="background: var(--success); border-color: var(--success);">
+                        ✓ Confirm Completion & Proceed to Review ⭐
+                    </button>
+                    <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary btn-lg">Cancel</a>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+
+    {% load static %}
+    <script src="{% static 'js/customer_portal.js' %}"></script>
+    <script src="{% static 'js/work_completion_validation.js' %}"></script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+    <script>
+        const remarksEl = document.getElementById('remarks');
+        const counterEl = document.getElementById('remarksCounter');
+        if (remarksEl && counterEl) {
+            remarksEl.addEventListener('input', function() {
+                counterEl.textContent = `${this.value.length} / 1000`;
+            });
+        }
+    </script>
+</body>
+</html>

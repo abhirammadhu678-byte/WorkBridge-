@@ -1,0 +1,1040 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if is_edit %}Edit Job - {{ job.job_title }}{% else %}Post a New Job{% endif %} - WorkBridge</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer_portal.css' %}">
+    <style>
+        .post-job-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        .post-job-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 992px) {
+            .post-job-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Progress Bar */
+        .progress-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 18px 24px;
+            border: 1px solid var(--neutral-200);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: var(--neutral-100);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 20%;
+            background: linear-gradient(90deg, var(--primary-500), var(--primary-700));
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+
+        /* Quick Templates */
+        .templates-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+        }
+
+        .template-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            background: var(--neutral-50);
+            color: var(--neutral-700);
+            border: 1px solid var(--neutral-200);
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .template-btn:hover {
+            background: var(--primary-50);
+            color: var(--primary-700);
+            border-color: var(--primary-300);
+            transform: translateY(-1px);
+        }
+
+        /* Quick Selection Chips */
+        .quick-chips-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .quick-chip {
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--neutral-100);
+            color: var(--neutral-600);
+            border: 1px solid transparent;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .quick-chip:hover {
+            background: var(--neutral-200);
+            color: var(--neutral-900);
+        }
+
+        .quick-chip.active {
+            background: var(--primary-100);
+            color: var(--primary-800);
+            border-color: var(--primary-300);
+        }
+
+        /* Interactive Tag Cloud Input */
+        .tags-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-md);
+            min-height: 48px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .tags-input-container:focus-within {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .interactive-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--primary-50);
+            color: var(--primary-700);
+            border: 1px solid var(--primary-200);
+            border-radius: 999px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .interactive-tag button {
+            background: none;
+            border: none;
+            color: var(--primary-500);
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .interactive-tag button:hover {
+            color: var(--danger-600);
+        }
+
+        .tags-text-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 140px;
+            font-size: 0.875rem;
+            color: var(--neutral-800);
+            padding: 4px 0;
+        }
+
+        /* Live Preview Sticky Column */
+        .live-preview-wrapper {
+            position: sticky;
+            top: 90px;
+        }
+
+        .preview-badge-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .preview-pulse {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--success-700);
+            background: var(--success-50);
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--success-200);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-500);
+            border-radius: 50%;
+            animation: pulseAnimation 1.5s infinite;
+        }
+
+        @keyframes pulseAnimation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .preview-job-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--neutral-200);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .preview-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0;
+            padding: 12px 0;
+            border-top: 1px solid var(--neutral-100);
+            border-bottom: 1px solid var(--neutral-100);
+        }
+
+        .preview-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8125rem;
+            color: var(--neutral-600);
+            font-weight: 500;
+        }
+
+        .helper-insert-bar {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .helper-insert-btn {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            background: var(--neutral-100);
+            color: var(--neutral-700);
+            border: 1px dashed var(--neutral-300);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .helper-insert-btn:hover {
+            background: var(--primary-50);
+            color: var(--primary-700);
+            border-color: var(--primary-300);
+        }
+
+        .char-counter {
+            font-size: 0.75rem;
+            color: var(--neutral-400);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .char-counter.good {
+            color: var(--success-600);
+        }
+
+        .char-counter.warning {
+            color: var(--warning-600);
+        }
+
+        /* Tab buttons for mobile view */
+        .mobile-view-tabs {
+            display: none;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .mobile-view-tabs {
+                display: flex;
+            }
+            .mobile-tab-btn {
+                flex: 1;
+                padding: 10px;
+                font-weight: 700;
+                font-size: 0.875rem;
+                text-align: center;
+                border-radius: var(--radius-md);
+                border: 1px solid var(--neutral-200);
+                background: white;
+                cursor: pointer;
+            }
+            .mobile-tab-btn.active {
+                background: var(--primary-600);
+                color: white;
+                border-color: var(--primary-600);
+            }
+            .preview-pane-mobile-hidden {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Employer Navbar -->
+    {% include "components/navbar_customer.html" %}
+
+    <main class="post-job-container">
+
+        <!-- Top Breadcrumb & Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <a href="{% url 'my_jobs' %}" class="btn btn-secondary" style="font-size: 0.875rem; padding: 6px 14px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to My Jobs
+            </a>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge badge-primary">{% if is_edit %}Editing Job #{{ job.id }}{% else %}New Opportunity{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <!-- Interactive Progress Header -->
+        <div class="progress-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 class="page-title" style="font-size: 1.5rem; margin-bottom: 4px;">
+                        {% if is_edit %}✏️ Edit Job Posting{% else %}📢 Post a Job Opportunity{% endif %}
+                    </h1>
+                    <p class="page-subtitle" style="font-size: 0.875rem; margin-bottom: 0;">
+                        {% if is_edit %}Update requirements or dates for this listing.{% else %}Fill in the details below or choose a starter template to reach qualified students.{% endif %}
+                    </p>
+                </div>
+                <div style="text-align: right; min-width: 100px;">
+                    <span id="progressPercent" style="font-size: 1.125rem; font-weight: 800; color: var(--primary-600);">20%</span>
+                    <div style="font-size: 0.75rem; color: var(--neutral-500); font-weight: 500;">Completeness</div>
+                </div>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- Mobile View Tabs -->
+        <div class="mobile-view-tabs">
+            <button type="button" class="mobile-tab-btn active" id="tabFormBtn" onclick="switchMobileTab('form')">
+                ✏️ Edit Job Form
+            </button>
+            <button type="button" class="mobile-tab-btn" id="tabPreviewBtn" onclick="switchMobileTab('preview')">
+                👁️ Live Student Preview
+            </button>
+        </div>
+
+        <div class="post-job-grid">
+
+            <!-- LEFT COLUMN: INTERACTIVE FORM -->
+            <div id="formSection">
+
+                {% if not is_edit %}
+                <!-- Quick Starter Templates -->
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.8125rem; font-weight: 700; color: var(--neutral-700);">
+                            ⚡ Quick Starter Templates:
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--neutral-400);">Click to auto-fill</span>
+                    </div>
+                    <div class="templates-row">
+                        <button type="button" class="template-btn" onclick="applyTemplate('web_dev')">
+                            💻 Web Development
+                        </button>
+                        <button type="button" class="template-btn" onclick="applyTemplate('photography')">
+                            📸 Event Photography
+                        </button>
+                        <button type="button" class="template-btn" onclick="applyTemplate('graphic_design')">
+                            🎨 Graphic Design
+                        </button>
+                        <button type="button" class="template-btn" onclick="applyTemplate('tutoring')">
+                            📚 Math & Science Tutor
+                        </button>
+                        <button type="button" class="template-btn" onclick="applyTemplate('event_support')">
+                            🎉 Event Coordinator
+                        </button>
+                        <button type="button" class="template-btn" onclick="applyTemplate('content_writing')">
+                            ✍️ Content Writing
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="portal-card">
+                    <form method="POST" id="interactiveJobForm" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert-item alert-error" style="margin-bottom: 20px; padding: 14px; background: var(--danger-50); border: 1px solid var(--danger-200); border-radius: var(--radius-md);">
+                                <div style="color: var(--danger-800); font-weight: 700; font-size: 0.875rem;">
+                                    ⚠️ Please resolve the following errors:
+                                </div>
+                                <div style="font-size: 0.8125rem; margin-top: 4px; color: var(--danger-700);">
+                                    {{ form.errors }}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- 1. JOB TITLE -->
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label class="form-label" for="id_job_title">
+                                    Job Title <span style="color: var(--danger-500);">*</span>
+                                </label>
+                                <span class="char-counter" id="titleCounter">0 / 80</span>
+                            </div>
+                            <input type="text" 
+                                   id="id_job_title" 
+                                   name="job_title" 
+                                   class="form-input" 
+                                   placeholder="e.g. React Frontend Developer, Event Photographer, Math Tutor" 
+                                   value="{{ form.job_title.value|default:'' }}"
+                                   required 
+                                   maxlength="100"
+                                   autocomplete="off">
+                            <span class="form-hint">A clear, specific title attracts 3x more relevant applicants.</span>
+                        </div>
+
+                        <!-- 2. LOCATION & QUICK CHIPS -->
+                        <div class="form-group">
+                            <label class="form-label" for="id_location">
+                                Work Location <span style="color: var(--danger-500);">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="id_location" 
+                                   name="location" 
+                                   class="form-input" 
+                                   placeholder="e.g. Remote / Online, Ernakulam, Trivandrum, On-Site" 
+                                   value="{{ form.location.value|default:'' }}"
+                                   required>
+                            <div class="quick-chips-group">
+                                <button type="button" class="quick-chip" onclick="setLocation('Remote / Online')">🌐 Remote / Online</button>
+                                <button type="button" class="quick-chip" onclick="setLocation('On-Site')">📍 On-Site</button>
+                                <button type="button" class="quick-chip" onclick="setLocation('Hybrid')">🏢 Hybrid</button>
+                                <button type="button" class="quick-chip" onclick="setLocation('Ernakulam / Kochi')">🌴 Ernakulam / Kochi</button>
+                                <button type="button" class="quick-chip" onclick="setLocation('Trivandrum')">🏛️ Trivandrum</button>
+                                <button type="button" class="quick-chip" onclick="setLocation('Calicut')">🏖️ Calicut</button>
+                            </div>
+                        </div>
+
+                        <!-- 3. DATE & DURATION (2-COL) -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <!-- WORK DATE -->
+                            <div class="form-group">
+                                <label class="form-label" for="id_work_date">
+                                    Work Execution Date <span style="color: var(--danger-500);">*</span>
+                                </label>
+                                <input type="date" 
+                                       id="id_work_date" 
+                                       name="work_date" 
+                                       class="form-input" 
+                                       value="{{ form.work_date.value|date:'Y-m-d'|default:form.work_date.value|default:'' }}"
+                                       required>
+                                <div class="quick-chips-group">
+                                    <button type="button" class="quick-chip" onclick="setDateOffset(0)">⚡ Today</button>
+                                    <button type="button" class="quick-chip" onclick="setDateOffset(1)">📅 Tomorrow</button>
+                                    <button type="button" class="quick-chip" onclick="setDateWeekend()">🎉 Weekend</button>
+                                    <button type="button" class="quick-chip" onclick="setDateOffset(7)">🗓️ Next Week</button>
+                                </div>
+                            </div>
+
+                            <!-- WORK DURATION -->
+                            <div class="form-group">
+                                <label class="form-label" for="id_work_duration">
+                                    Work Duration <span style="color: var(--danger-500);">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="id_work_duration" 
+                                       name="work_duration" 
+                                       class="form-input" 
+                                       placeholder="e.g. 4 Hours, 1 Day, 1 Week" 
+                                       value="{{ form.work_duration.value|default:'' }}"
+                                       required>
+                                <div class="quick-chips-group">
+                                    <button type="button" class="quick-chip" onclick="setDuration('2 Hours')">2h</button>
+                                    <button type="button" class="quick-chip" onclick="setDuration('4 Hours')">4h</button>
+                                    <button type="button" class="quick-chip" onclick="setDuration('Half Day')">Half Day</button>
+                                    <button type="button" class="quick-chip" onclick="setDuration('Full Day')">Full Day</button>
+                                    <button type="button" class="quick-chip" onclick="setDuration('2 Days')">2 Days</button>
+                                    <button type="button" class="quick-chip" onclick="setDuration('1 Week')">1 Week</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. REQUIRED SKILLS WITH INTERACTIVE TAG INPUT -->
+                        <div class="form-group">
+                            <label class="form-label" for="tagsInput">
+                                Required Skills & Tags
+                            </label>
+                            <!-- Hidden input actually submitted with form -->
+                            <input type="hidden" id="id_required_skills" name="required_skills" value="{{ form.required_skills.value|default:'' }}">
+                            
+                            <div class="tags-input-container" id="tagsContainer" onclick="document.getElementById('tagsInput').focus()">
+                                <!-- Dynamic tags rendered here -->
+                                <input type="text" id="tagsInput" class="tags-text-input" placeholder="Type a skill and press Enter or comma...">
+                            </div>
+
+                            <div style="margin-top: 8px;">
+                                <span style="font-size: 0.75rem; color: var(--neutral-500); font-weight: 600;">Popular skills (click to add):</span>
+                                <div class="quick-chips-group" style="margin-top: 4px;">
+                                    <button type="button" class="quick-chip" onclick="addTag('Python')">+ Python</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('JavaScript')">+ JavaScript</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Graphic Design')">+ Graphic Design</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Photography')">+ Photography</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Video Editing')">+ Video Editing</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Content Writing')">+ Content Writing</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Communication')">+ Communication</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Tutoring')">+ Tutoring</button>
+                                    <button type="button" class="quick-chip" onclick="addTag('Event Coordination')">+ Event Coordination</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. JOB DESCRIPTION -->
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label class="form-label" for="id_description">
+                                    Detailed Description & Requirements <span style="color: var(--danger-500);">*</span>
+                                </label>
+                                <span class="char-counter" id="descCounter">0 words | 0 chars</span>
+                            </div>
+
+                            <div class="helper-insert-bar">
+                                <span style="font-size: 0.75rem; color: var(--neutral-500); font-weight: 600;">Insert section:</span>
+                                <button type="button" class="helper-insert-btn" onclick="insertSection('🎯 Responsibilities:\n- \n- \n')">+ Responsibilities</button>
+                                <button type="button" class="helper-insert-btn" onclick="insertSection('📦 Deliverables:\n- \n- \n')">+ Deliverables</button>
+                                <button type="button" class="helper-insert-btn" onclick="insertSection('💼 Requirements / Prerequisites:\n- \n')">+ Requirements</button>
+                                <button type="button" class="helper-insert-btn" onclick="insertSection('⏰ Timing & Logistics:\n- \n')">+ Logistics</button>
+                            </div>
+
+                            <textarea id="id_description" 
+                                      name="description" 
+                                      rows="6" 
+                                      class="form-textarea" 
+                                      placeholder="Describe the task expectations, deliverables, required background, and instructions..." 
+                                      required>{{ form.description.value|default:'' }}</textarea>
+                            <span class="form-hint">Provide clear instructions to minimize back-and-forth inquiries.</span>
+                        </div>
+
+                        <!-- ACTIONS -->
+                        <div style="display: flex; gap: 12px; margin-top: 32px; border-top: 1px solid var(--neutral-100); padding-top: 20px; flex-wrap: wrap;">
+                            <button type="submit" class="btn btn-primary btn-lg" style="flex: 1; min-width: 200px;" id="publishBtn">
+                                {% if is_edit %}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                    Save Changes
+                                {% else %}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                    </svg>
+                                    Publish Job Opportunity
+                                {% endif %}
+                            </button>
+                            {% if not is_edit %}
+                            <button type="button" class="btn btn-secondary btn-lg" onclick="resetInteractiveForm()">
+                                ↺ Reset Form
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'my_jobs' %}" class="btn btn-outline btn-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: LIVE STUDENT PREVIEW (STICKY) -->
+            <div id="previewSection" class="preview-pane-mobile-hidden">
+                <div class="live-preview-wrapper">
+                    <div class="preview-badge-header">
+                        <div style="font-size: 0.875rem; font-weight: 700; color: var(--neutral-700);">
+                            Live Student Preview
+                        </div>
+                        <div class="preview-pulse">
+                            <span class="pulse-dot"></span>
+                            Real-time Reactive
+                        </div>
+                    </div>
+
+                    <!-- PREVIEW CARD -->
+                    <div class="preview-job-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-600), var(--primary-800)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">
+                                    {{ request.user.customer_profile.full_name|default:request.user.username|first|upper|default:"E" }}
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.875rem; font-weight: 700; color: var(--neutral-900);">
+                                        {{ request.user.customer_profile.full_name|default:request.user.username|default:"Your Organization" }}
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--success-600); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                        Verified Employer
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="badge badge-success" id="previewDateStatusBadge">🟢 Upcoming</span>
+                        </div>
+
+                        <h2 id="previewTitle" style="font-size: 1.125rem; font-weight: 700; color: var(--neutral-900); margin: 0 0 8px; line-height: 1.35;">
+                            Untitled Job Opportunity
+                        </h2>
+
+                        <!-- Meta Chips -->
+                        <div class="preview-card-meta">
+                            <div class="preview-meta-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                <span id="previewLocation">Location: Not specified</span>
+                            </div>
+                            <div class="preview-meta-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span id="previewDuration">Duration: Not specified</span>
+                            </div>
+                            <div class="preview-meta-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                <span id="previewDate">Date: Not specified</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Skills Tags -->
+                        <div style="margin-bottom: 14px;">
+                            <div style="font-size: 0.75rem; font-weight: 600; color: var(--neutral-500); margin-bottom: 6px;">Skills Tagged:</div>
+                            <div id="previewSkillsList" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <span style="font-size: 0.75rem; color: var(--neutral-400); font-style: italic;">No skills added yet</span>
+                            </div>
+                        </div>
+
+                        <!-- Description Preview -->
+                        <div style="font-size: 0.8125rem; color: var(--neutral-600); line-height: 1.5; max-height: 120px; overflow-y: auto; background: var(--neutral-50); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--neutral-200); white-space: pre-line;" id="previewDescription">
+                            Your job description preview will appear here as you type...
+                        </div>
+
+                        <!-- Mock Button -->
+                        <div style="margin-top: 18px;">
+                            <button type="button" class="btn btn-primary" style="width: 100%; pointer-events: none; opacity: 0.9; justify-content: center;">
+                                Apply for this Job ⚡
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pro Tips Box -->
+                    <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 16px; margin-top: 18px;">
+                        <div style="font-size: 0.8125rem; font-weight: 700; color: var(--neutral-800); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            💡 Tips for Quality Responses
+                        </div>
+                        <ul style="font-size: 0.75rem; color: var(--neutral-600); margin: 0; padding-left: 18px; line-height: 1.6;">
+                            <li>Add at least 2-3 specific skills (e.g. Python, Figma).</li>
+                            <li>State clearly if this is remote or in-person work.</li>
+                            <li>Specify expected turnaround or milestones.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Global JS Script -->
+    <script src="{% static 'js/global_ui.js' %}"></script>
+
+    <!-- Interactive Job Post Logic -->
+    <script>
+        // State
+        let currentSkills = [];
+
+        // Predefined Starter Templates
+        const templates = {
+            web_dev: {
+                title: "Frontend Landing Page Developer (React / HTML/CSS)",
+                location: "Remote / Online",
+                duration: "2 Days",
+                dateOffset: 2,
+                skills: ["React", "HTML/CSS", "JavaScript", "Responsive Design"],
+                description: "🎯 Responsibilities:\n- Build a sleek, responsive landing page based on provided Figma mockups.\n- Ensure mobile and cross-browser responsiveness.\n\n📦 Deliverables:\n- Clean, documented code in a GitHub repository.\n- Fast load times and pixel-perfect layout.\n\n💼 Requirements:\n- Experience with modern CSS and JavaScript/React.\n- Good communication and turnaround."
+            },
+            photography: {
+                title: "Event Photographer & Photo Editor",
+                location: "On-Site (Kochi)",
+                duration: "4 Hours",
+                dateOffset: 3,
+                skills: ["Photography", "Lightroom", "Photo Editing", "DSLR"],
+                description: "🎯 Responsibilities:\n- Cover the college tech seminar and cultural events on-site.\n- Capture high-res candid shots and key speaker moments.\n\n📦 Deliverables:\n- 50+ color-graded, high-resolution JPEG photos delivered within 48 hours.\n\n💼 Requirements:\n- Owns a DSLR/Mirrorless camera with standard zoom lens.\n- Punctual and professional attire."
+            },
+            graphic_design: {
+                title: "Social Media Banner & Flyer Designer",
+                location: "Remote / Online",
+                duration: "Half Day",
+                dateOffset: 1,
+                skills: ["Graphic Design", "Figma", "Canva", "Photoshop"],
+                description: "🎯 Responsibilities:\n- Create 5 promotional flyers and Instagram story banners for our upcoming workshop.\n\n📦 Deliverables:\n- Exported PNG/PDF assets and editable source files (Figma or Canva links).\n\n💼 Requirements:\n- Keen eye for modern typography and color palettes.\n- Quick turnaround within 24 hours."
+            },
+            tutoring: {
+                title: "Math & Physics Tutor (Grade 11-12 CBSE)",
+                location: "Remote / Online",
+                duration: "2 Hours",
+                dateOffset: 1,
+                skills: ["Tutoring", "Mathematics", "Physics", "Teaching"],
+                description: "🎯 Responsibilities:\n- Conduct an interactive 1-on-1 tutoring session covering Calculus and Mechanics problem solving.\n- Clarify student doubts and provide step-by-step problem walkthroughs.\n\n💼 Requirements:\n- Strong fundamentals in high school Mathematics & Physics.\n- Patient and encouraging communication style."
+            },
+            event_support: {
+                title: "Registration Desk & Guest Coordinator",
+                location: "On-Site (Auditorium)",
+                duration: "Full Day",
+                dateOffset: 4,
+                skills: ["Event Coordination", "Communication", "Registration", "Logistics"],
+                description: "🎯 Responsibilities:\n- Welcome guests, verify registration QR codes, and distribute event kits.\n- Guide attendees to seminar halls and assist backstage logistics.\n\n💼 Requirements:\n- Friendly, proactive, and energetic.\n- Able to be on-site from 8:30 AM to 5:00 PM."
+            },
+            content_writing: {
+                title: "Technical Blog & SEO Content Writer",
+                location: "Remote / Online",
+                duration: "1 Day",
+                dateOffset: 2,
+                skills: ["Content Writing", "SEO", "Technical Writing", "Research"],
+                description: "🎯 Responsibilities:\n- Write a 1,200-word engaging, SEO-optimized article on 'Getting Started with Modern Web Frameworks'.\n\n📦 Deliverables:\n- Google Doc with well-structured headings, meta descriptions, and references.\n\n💼 Requirements:\n- Clear English practical examples."
+            }
+        };
+
+        // DOM elements
+        const titleInput = document.getElementById('id_job_title');
+        const locationInput = document.getElementById('id_location');
+        const dateInput = document.getElementById('id_work_date');
+        const durationInput = document.getElementById('id_work_duration');
+        const descInput = document.getElementById('id_description');
+        const hiddenSkillsInput = document.getElementById('id_required_skills');
+        const tagsInput = document.getElementById('tagsInput');
+        const tagsContainer = document.getElementById('tagsContainer');
+
+        const previewTitle = document.getElementById('previewTitle');
+        const previewLocation = document.getElementById('previewLocation');
+        const previewDuration = document.getElementById('previewDuration');
+        const previewDate = document.getElementById('previewDate');
+        const previewSkillsList = document.getElementById('previewSkillsList');
+        const previewDescription = document.getElementById('previewDescription');
+        const previewDateStatusBadge = document.getElementById('previewDateStatusBadge');
+
+        const titleCounter = document.getElementById('titleCounter');
+        const descCounter = document.getElementById('descCounter');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+
+        // Set min date on dateInput to today
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (dateInput) {
+            dateInput.min = todayStr;
+            if (!dateInput.value) {
+                dateInput.value = todayStr;
+            }
+        }
+
+        // Initialize skills from hidden input
+        function initSkills() {
+            const raw = hiddenSkillsInput.value.trim();
+            if (raw) {
+                currentSkills = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            } else {
+                currentSkills = [];
+            }
+            renderTags();
+        }
+
+        function renderTags() {
+            const existingTags = tagsContainer.querySelectorAll('.interactive-tag');
+            existingTags.forEach(t => t.remove());
+
+            currentSkills.forEach((skill, index) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'interactive-tag';
+                tagEl.innerHTML = `
+                    ${escapeHtml(skill)}
+                    <button type="button" onclick="removeTag(${index})" title="Remove skill">&times;</button>
+                `;
+                tagsContainer.insertBefore(tagEl, tagsInput);
+            });
+
+            // Sync hidden input
+            hiddenSkillsInput.value = currentSkills.join(', ');
+
+            // Sync preview
+            if (currentSkills.length === 0) {
+                previewSkillsList.innerHTML = '<span style="font-size: 0.75rem; color: var(--neutral-400); font-style: italic;">No skills added yet</span>';
+            } else {
+                previewSkillsList.innerHTML = currentSkills.map(s => `<span class="badge badge-primary" style="font-size: 0.75rem;">${escapeHtml(s)}</span>`).join(' ');
+            }
+            updateProgress();
+        }
+
+        function addTag(skill) {
+            skill = skill.trim();
+            if (!skill) return;
+            if (!currentSkills.some(s => s.toLowerCase() === skill.toLowerCase())) {
+                currentSkills.push(skill);
+                renderTags();
+            }
+            tagsInput.value = '';
+        }
+
+        function removeTag(index) {
+            currentSkills.splice(index, 1);
+            renderTags();
+        }
+
+        // Tag input event handler
+        tagsInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTag(this.value);
+            } else if (e.key === 'Backspace' && this.value === '' && currentSkills.length > 0) {
+                removeTag(currentSkills.length - 1);
+            }
+        });
+
+        tagsInput.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                addTag(this.value);
+            }
+        });
+
+        // Quick Pick Functions
+        function setLocation(loc) {
+            locationInput.value = loc;
+            triggerInputUpdate(locationInput);
+        }
+
+        function setDuration(dur) {
+            durationInput.value = dur;
+            triggerInputUpdate(durationInput);
+        }
+
+        function setDateOffset(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            dateInput.value = d.toISOString().split('T')[0];
+            triggerInputUpdate(dateInput);
+        }
+
+        function setDateWeekend() {
+            const d = new Date();
+            const day = d.getDay();
+            const diff = (6 - day + 7) % 7 || 7; // next Saturday
+            d.setDate(d.getDate() + diff);
+            dateInput.value = d.toISOString().split('T')[0];
+            triggerInputUpdate(dateInput);
+        }
+
+        function insertSection(text) {
+            const current = descInput.value;
+            const cursorPos = descInput.selectionStart;
+            const textBefore = current.substring(0, cursorPos);
+            const textAfter = current.substring(cursorPos, current.length);
+            
+            const separator = (textBefore.length > 0 && !textBefore.endsWith('\n\n')) ? '\n\n' : '';
+            descInput.value = textBefore + separator + text + textAfter;
+            triggerInputUpdate(descInput);
+            descInput.focus();
+        }
+
+        function applyTemplate(key) {
+            const t = templates[key];
+            if (!t) return;
+
+            titleInput.value = t.title;
+            locationInput.value = t.location;
+            durationInput.value = t.duration;
+            setDateOffset(t.dateOffset);
+            descInput.value = t.description;
+
+            currentSkills = [...t.skills];
+            renderTags();
+
+            updateAllPreviews();
+        }
+
+        function resetInteractiveForm() {
+            if (confirm("Are you sure you want to reset all form fields?")) {
+                document.getElementById('interactiveJobForm').reset();
+                currentSkills = [];
+                renderTags();
+                dateInput.value = todayStr;
+                updateAllPreviews();
+            }
+        }
+
+        function triggerInputUpdate(el) {
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        function updateAllPreviews() {
+            // Title
+            const titleVal = titleInput.value.trim();
+            previewTitle.textContent = titleVal || "Untitled Job Opportunity";
+            titleCounter.textContent = `${titleVal.length} / 80`;
+            if (titleVal.length >= 5) {
+                titleCounter.className = 'char-counter good';
+            } else {
+                titleCounter.className = 'char-counter';
+            }
+
+            // Location
+            const locVal = locationInput.value.trim();
+            previewLocation.textContent = locVal ? locVal : "Location: Not specified";
+
+            // Duration
+            const durVal = durationInput.value.trim();
+            previewDuration.textContent = durVal ? durVal : "Duration: Not specified";
+
+            // Date
+            const dateVal = dateInput.value;
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                previewDate.textContent = formatted;
+
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (d < today) {
+                    previewDateStatusBadge.textContent = "⚠️ Date Passed";
+                    previewDateStatusBadge.className = "badge badge-danger";
+                } else if (d.getTime() === today.getTime()) {
+                    previewDateStatusBadge.textContent = "⚡ Today";
+                    previewDateStatusBadge.className = "badge badge-warning";
+                } else {
+                    previewDateStatusBadge.textContent = "🟢 Upcoming";
+                    previewDateStatusBadge.className = "badge badge-success";
+                }
+            } else {
+                previewDate.textContent = "Date: Not specified";
+                previewDateStatusBadge.textContent = "Draft";
+                previewDateStatusBadge.className = "badge badge-neutral";
+            }
+
+            // Description
+            const descVal = descInput.value.trim();
+            previewDescription.textContent = descVal || "Your job description preview will appear here as you type...";
+            const wordCount = descVal ? descVal.split(/\s+/).filter(w => w.length > 0).length : 0;
+            descCounter.textContent = `${wordCount} words | ${descVal.length} chars`;
+            if (descVal.length >= 20) {
+                descCounter.className = 'char-counter good';
+            } else {
+                descCounter.className = 'char-counter';
+            }
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            let score = 0;
+            if (titleInput.value.trim().length >= 3) score += 20;
+            if (locationInput.value.trim().length >= 2) score += 20;
+            if (dateInput.value) score += 15;
+            if (durationInput.value.trim().length >= 1) score += 15;
+            if (currentSkills.length > 0) score += 15;
+            if (descInput.value.trim().length >= 10) score += 15;
+
+            progressBar.style.width = score + '%';
+            progressPercent.textContent = score + '%';
+
+            if (score === 100) {
+                progressBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                progressPercent.style.color = '#059669';
+            } else {
+                progressBar.style.background = 'linear-gradient(90deg, var(--primary-500), var(--primary-700))';
+                progressPercent.style.color = 'var(--primary-600)';
+            }
+        }
+
+        // Mobile Tab Switcher
+        function switchMobileTab(tab) {
+            const formSec = document.getElementById('formSection');
+            const prevSec = document.getElementById('previewSection');
+            const tabForm = document.getElementById('tabFormBtn');
+            const tabPrev = document.getElementById('tabPreviewBtn');
+
+            if (tab === 'form') {
+                formSec.style.display = 'block';
+                prevSec.classList.add('preview-pane-mobile-hidden');
+                tabForm.classList.add('active');
+                tabPrev.classList.remove('active');
+            } else {
+                formSec.style.display = 'none';
+                prevSec.classList.remove('preview-pane-mobile-hidden');
+                tabPrev.classList.add('active');
+                tabForm.classList.remove('active');
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Bind input listeners
+        [titleInput, locationInput, dateInput, durationInput, descInput].forEach(el => {
+            if (el) {
+                el.addEventListener('input', updateAllPreviews);
+                el.addEventListener('change', updateAllPreviews);
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initSkills();
+            updateAllPreviews();
+        });
+    </script>
+</body>
+</html>

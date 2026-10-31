@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+    <style>
+        .notifications-container-card {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .notif-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .notif-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .notif-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .notif-card.unread {
+            background: #f0f7ff;
+            border-color: #bfdbfe;
+        }
+
+        .notif-card.unread::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary);
+            border-top-left-radius: var(--radius-md);
+            border-bottom-left-radius: var(--radius-md);
+        }
+
+        .notif-icon-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            background: var(--slate-100);
+        }
+
+        .notif-body {
+            flex-grow: 1;
+        }
+
+        .notif-message-text {
+            font-size: 14.5px;
+            color: var(--slate-800);
+            line-height: 1.5;
+            margin-bottom: 6px;
+        }
+
+        .notif-time-text {
+            font-size: 12px;
+            color: var(--slate-400);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <header class="page-header" style="max-width: 800px; margin: 0 auto 24px;">
+            <div>
+                <h1 class="page-header-title">Notifications Inbox</h1>
+                <p class="page-header-subtitle">Stay updated on employer decisions, shortlists, reviews, and admin approvals.</p>
+            </div>
+            <div class="page-header-actions">
+                <a href="{% url 'student_dashboard' %}" class="btn btn-secondary btn-sm" id="btn-back-dashboard">
+                    &larr; Back to Dashboard
+                </a>
+            </div>
+        </header>
+
+        <div class="notifications-container-card">
+            
+            {% if notifications %}
+                <div class="notif-list">
+                    {% for n in notifications %}
+                        <div class="notif-card {% if not n.is_read %}unread{% endif %}">
+                            <div class="notif-icon-circle">
+                                {% if "approved" in n.message|lower or "verified" in n.message|lower or "accepted" in n.message|lower %}
+                                    🎉
+                                {% elif "shortlist" in n.message|lower %}
+                                    ⭐
+                                {% elif "review" in n.message|lower or "⭐" in n.message %}
+                                    🌟
+                                {% elif "rejected" in n.message|lower %}
+                                    ⚠️
+                                {% elif "completed" in n.message|lower %}
+                                    🏆
+                                {% else %}
+                                    🔔
+                                {% endif %}
+                            </div>
+
+                            <div class="notif-body">
+                                <p class="notif-message-text">{{ n.message }}</p>
+                                <span class="notif-time-text">
+                                    <span>🕒</span> {{ n.created_at|date:"M d, Y - h:i A" }} ({{ n.created_at|timesince }} ago)
+                                </span>
+                            </div>
+
+                            {% if not n.is_read %}
+                                <span class="status-badge status-shortlisted" style="font-size: 10px; padding: 2px 8px;">New</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-box">
+                    <span class="empty-state-icon">🔔</span>
+                    <h3 class="empty-state-title">Your Inbox is Clear</h3>
+                    <p class="empty-state-desc">You have no new alerts or notifications. Activity regarding job applications and reviews will appear here.</p>
+                    <a href="{% url 'available_jobs' %}" class="btn btn-primary">Find Jobs</a>
+                </div>
+            {% endif %}
+
+        </div>
+
+    </main>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

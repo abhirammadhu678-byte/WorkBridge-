@@ -1,0 +1,56 @@
+{% load static %}
+<header class="wb-navbar">
+    <div class="wb-navbar-inner">
+        <a href="{% url 'customer_dashboard' %}" class="wb-brand">
+            <span class="wb-brand-logo">WorkBridge<span class="dot">.</span></span>
+            <span class="wb-role-badge role-customer">Employer</span>
+        </a>
+
+        <ul class="wb-nav-menu">
+            <li><a href="{% url 'customer_dashboard' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'customer_dashboard' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="{% url 'job_post' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'job_post' %}active{% endif %}">Post Job</a></li>
+            <li><a href="{% url 'my_jobs' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'my_jobs' or request.resolver_match.url_name == 'applicants_for_job' or request.resolver_match.url_name == 'job_edit' %}active{% endif %}">My Jobs</a></li>
+            <li><a href="{% url 'applicant_selection' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'applicant_selection' %}active{% endif %}">Applicants</a></li>
+            <li><a href="{% url 'work_completion' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'work_completion' %}active{% endif %}">Work Completion</a></li>
+            <li><a href="{% url 'rating_review' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'rating_review' %}active{% endif %}">Reviews</a></li>
+        </ul>
+
+        <div class="wb-nav-actions">
+            <a href="{% url 'job_post' %}" class="btn btn-primary btn-sm">+ Post Job</a>
+            <div class="wb-user-pill" title="{{ customer_profile.full_name|default:user.username }}">
+                <div class="wb-avatar" style="background: linear-gradient(135deg, var(--teal), var(--primary));">
+                    {{ customer_profile.full_name|default:user.username|first|upper }}
+                </div>
+                <span>{{ customer_profile.full_name|default:user.username|truncatechars:12 }}</span>
+            </div>
+            <a href="{% url 'logout' %}" class="wb-btn-logout">Logout</a>
+
+            <button type="button" class="wb-mobile-toggle" id="wbMobileNavToggle" aria-label="Toggle Navigation Menu">
+                ☰
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Mobile Navigation Drawer -->
+<div class="wb-drawer-backdrop" id="wbNavBackdrop"></div>
+<div class="wb-mobile-drawer" id="wbMobileNavDrawer">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--slate-200);">
+        <div class="wb-user-pill" style="border: none; padding: 0; background: transparent;">
+            <div class="wb-avatar" style="background: linear-gradient(135deg, var(--teal), var(--primary));">
+                {{ customer_profile.full_name|default:user.username|first|upper }}
+            </div>
+            <strong>{{ customer_profile.full_name|default:user.username }}</strong>
+        </div>
+        <span class="wb-role-badge role-customer">Employer</span>
+    </div>
+    <a href="{% url 'customer_dashboard' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'customer_dashboard' %}active{% endif %}">📊 Dashboard</a>
+    <a href="{% url 'job_post' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'job_post' %}active{% endif %}">➕ Post New Job</a>
+    <a href="{% url 'my_jobs' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'my_jobs' or request.resolver_match.url_name == 'applicants_for_job' or request.resolver_match.url_name == 'job_edit' %}active{% endif %}">💼 My Posted Jobs</a>
+    <a href="{% url 'applicant_selection' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'applicant_selection' %}active{% endif %}">👥 Review Applicants</a>
+    <a href="{% url 'work_completion' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'work_completion' %}active{% endif %}">📝 Work Completion</a>
+    <a href="{% url 'rating_review' %}" class="wb-nav-link {% if request.resolver_match.url_name == 'rating_review' %}active{% endif %}">⭐ Ratings & Reviews</a>
+    <a href="{% url 'logout' %}" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger-border); justify-content: center; margin-top: 8px;">
+        🚪 Logout
+    </a>
+</div>

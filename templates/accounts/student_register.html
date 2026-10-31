@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #090c10 0%, #0c1116 50%, #110f19 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 16px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 760px;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-2xl);
+            padding: 40px 36px;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .auth-brand {
+            font-family: var(--font-heading);
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 6px;
+            text-decoration: none;
+        }
+
+        .auth-brand .dot {
+            color: var(--primary);
+        }
+
+        .auth-title {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--slate-900);
+            margin-bottom: 4px;
+        }
+
+        .auth-subtitle {
+            font-size: 13.5px;
+            color: var(--slate-500);
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .error-message {
+            display: none;
+            background: var(--danger-light);
+            color: var(--danger-text);
+            border: 1px solid var(--danger-border);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            font-weight: 600;
+        }
+
+        .invalid {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+        }
+
+        @media (max-width: 640px) {
+            .form-row-2 {
+                grid-template-columns: 1fr;
+            }
+            .auth-card {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            
+            <div class="auth-header">
+                <a href="{% url 'home' %}" class="auth-brand">
+                    WorkBridge<span class="dot">.</span>
+                </a>
+                <h1 class="auth-title">Student Registration</h1>
+                <p class="auth-subtitle">Create your verified student profile to start discovering jobs & projects</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% include "components/alerts.html" %}
+
+            <div class="error-message" id="formError"></div>
+
+            <form method="POST" enctype="multipart/form-data" id="studentRegistrationForm" novalidate>
+                {% csrf_token %}
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="fullname">Full Name <span style="color: var(--danger);">*</span></label>
+                        <input id="fullname" type="text" class="form-input" name="fullname" placeholder="e.g. Alex Johnson" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address <span style="color: var(--danger);">*</span></label>
+                        <input id="email" type="email" class="form-input" name="email" placeholder="alex@example.com" required>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="mobile">Mobile Number <span style="color: var(--danger);">*</span></label>
+                        <input id="mobile" type="text" class="form-input" name="mobile" placeholder="+1 555-0199" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="college">College Name <span style="color: var(--danger);">*</span></label>
+                        <input id="college" type="text" class="form-input" name="college" placeholder="e.g. Stanford University" required>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="district">District <span style="color: var(--danger);">*</span></label>
+                        <select id="district" class="form-select" name="district" required>
+                            <option value="">Select District</option>
+                            <option>Alappuzha</option>
+                            <option>Ernakulam</option>
+                            <option>Idukki</option>
+                            <option>Kannur</option>
+                            <option>Kasaragod</option>
+                            <option>Kollam</option>
+                            <option>Kottayam</option>
+                            <option>Kozhikode</option>
+                            <option>Malappuram</option>
+                            <option>Palakkad</option>
+                            <option>Pathanamthitta</option>
+                            <option>Thiruvananthapuram</option>
+                            <option>Thrissur</option>
+                            <option>Wayanad</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="place">Place / City <span style="color: var(--danger);">*</span></label>
+                        <input id="place" type="text" class="form-input" name="place" placeholder="City or Town" required>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="course">Course / Major <span style="color: var(--danger);">*</span></label>
+                        <input id="course" type="text" class="form-input" name="course" placeholder="e.g. B.Tech Computer Science" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="semester">Semester <span style="color: var(--danger);">*</span></label>
+                        <select id="semester" class="form-select" name="semester" required>
+                            <option value="">Select Semester</option>
+                            <option>Semester 1</option>
+                            <option>Semester 2</option>
+                            <option>Semester 3</option>
+                            <option>Semester 4</option>
+                            <option>Semester 5</option>
+                            <option>Semester 6</option>
+                            <option>Semester 7</option>
+                            <option>Semester 8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password <span style="color: var(--danger);">*</span></label>
+                        <input id="password" type="password" class="form-input" name="password" placeholder="At least 8 characters" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirm_password">Confirm Password <span style="color: var(--danger);">*</span></label>
+                        <input id="confirm_password" type="password" class="form-input" name="confirm_password" placeholder="Re-enter password" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="address">Address <span style="color: var(--danger);">*</span></label>
+                    <textarea id="address" class="form-textarea" rows="2" name="address" placeholder="Enter your full residential address" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="profile_photo">Profile Photo (Optional)</label>
+                    <input id="profile_photo" type="file" class="form-input" name="profile_photo" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+                    Complete Student Registration
+                </button>
+            </form>
+
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--slate-100); text-align: center; font-size: 13.5px; color: var(--slate-600);">
+                Already have an account? <a href="{% url 'login' %}" style="color: var(--primary); font-weight: 700;">Sign In</a> &bull; <a href="{% url 'customer_register' %}" style="color: var(--slate-600); font-weight: 600;">Join as Employer</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+    <script>
+        const studentForm = document.getElementById('studentRegistrationForm');
+        const formError = document.getElementById('formError');
+        const fieldIds = ['fullname', 'email', 'mobile', 'college', 'district', 'place', 'course', 'semester', 'password', 'confirm_password', 'address'];
+
+        function clearErrors() {
+            formError.style.display = 'none';
+            formError.textContent = '';
+            fieldIds.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.classList.remove('invalid');
+                }
+            });
+        }
+
+        function showError(message, invalidFields = []) {
+            formError.textContent = message;
+            formError.style.display = 'block';
+            invalidFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.classList.add('invalid');
+                }
+            });
+        }
+
+        studentForm.addEventListener('submit', function (event) {
+            clearErrors();
+
+            const values = fieldIds.reduce((acc, id) => {
+                const input = document.getElementById(id);
+                acc[id] = input ? input.value.trim() : '';
+                return acc;
+            }, {});
+
+            const missingFields = fieldIds.filter(id => !values[id]);
+            if (missingFields.length > 0) {
+                event.preventDefault();
+                showError('Please fill in all required fields.', missingFields);
+                return;
+            }
+
+            if (values.password !== values.confirm_password) {
+                event.preventDefault();
+                showError('Passwords do not match.', ['password', 'confirm_password']);
+                return;
+            }
+
+            if (values.password.length < 8) {
+                event.preventDefault();
+                showError('Password must be at least 8 characters long.', ['password', 'confirm_password']);
+                return;
+            }
+
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(values.email)) {
+                event.preventDefault();
+                showError('Please enter a valid email address.', ['email']);
+                return;
+            }
+
+            const mobilePattern = /^[0-9()+\s-]{7,20}$/;
+            if (!mobilePattern.test(values.mobile)) {
+                event.preventDefault();
+                showError('Please enter a valid mobile number.', ['mobile']);
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Portal{% endblock %} - WorkBridge</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_portal.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-brand">
+            <a href="{% url 'admin_dashboard' %}" class="brand-logo-wrap">
+                <div class="brand-icon">⚡</div>
+                <div class="brand-text">WorkBridge<span>.Admin</span></div>
+            </a>
+            <span class="admin-badge">Staff</span>
+        </div>
+
+        <div class="sidebar-menu-wrap">
+            <div class="menu-section-label">Core Overview</div>
+            
+            <a href="{% url 'admin_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </div>
+            </a>
+
+            <div class="menu-section-label">Verification & Moderation</div>
+
+            <a href="{% url 'admin_verifications' %}" class="nav-item {% if 'verifications' in request.path %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">🪪</span>
+                    <span>Student Verification</span>
+                </div>
+                {% if pending_verifications_count %}
+                <span class="nav-pill-count nav-pill-warning">{{ pending_verifications_count }}</span>
+                {% endif %}
+            </a>
+
+            <a href="{% url 'admin_reports' %}" class="nav-item {% if 'reports' in request.path %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">🛡️</span>
+                    <span>Manage Reports</span>
+                </div>
+                {% if pending_reports_count %}
+                <span class="nav-pill-count nav-pill-danger">{{ pending_reports_count }}</span>
+                {% endif %}
+            </a>
+
+            <div class="menu-section-label">Management Directory</div>
+
+            <a href="{% url 'admin_users' %}" class="nav-item {% if 'users' in request.path %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">👥</span>
+                    <span>Manage Users</span>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_jobs' %}" class="nav-item {% if 'jobs' in request.path %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">💼</span>
+                    <span>Manage Jobs</span>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_applications' %}" class="nav-item {% if 'applications' in request.path %}active{% endif %}">
+                <div class="nav-link-content">
+                    <span class="nav-icon">📄</span>
+                    <span>Manage Applications</span>
+                </div>
+            </a>
+
+            <div class="menu-section-label">Navigation Shortcuts</div>
+            
+            <a href="{% url 'home' %}" class="nav-item" target="_blank">
+                <div class="nav-link-content">
+                    <span class="nav-icon">🌐</span>
+                    <span>Main Website ↗</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="admin-profile-pill">
+                <div class="admin-avatar">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+                <div class="admin-meta">
+                    <div class="admin-name">{{ request.user.username }}</div>
+                    <div class="admin-role">System Administrator</div>
+                </div>
+                <a href="{% url 'logout' %}" class="logout-btn-mini" title="Logout">🚪</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN PANEL -->
+    <main class="admin-main">
+        <!-- STICKY TOPBAR -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <button class="mobile-sidebar-toggle" id="sidebarToggleBtn" aria-label="Toggle Sidebar">☰</button>
+                <div class="topbar-breadcrumbs">
+                    <a href="{% url 'admin_dashboard' %}">Admin</a>
+                    <span>/</span>
+                    <span class="current-page">{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <a href="{% url 'admin_verifications' %}" class="quick-link-btn">
+                    <span>🪪</span>
+                    <span>Verifications</span>
+                </a>
+                <a href="{% url 'admin_reports' %}" class="quick-link-btn">
+                    <span>🛡️</span>
+                    <span>Reports</span>
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">
+                    <span>Logout</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- CONTENT INJECTION -->
+        <div class="admin-content">
+            <!-- FLASH MESSAGES -->
+            {% if messages %}
+            <div class="alert-container">
+                {% for message in messages %}
+                <div class="alert-toast alert-toast-{{ message.tags|default:'info' }}">
+                    <span>{{ message }}</span>
+                    <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+</div>
+
+<!-- GENERIC DOCUMENT PREVIEW MODAL -->
+<div class="modal-overlay" id="docPreviewModal">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="docModalTitle">Document Preview</h3>
+            <button type="button" class="modal-close-btn" onclick="closeModal('docPreviewModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="doc-preview-container" id="docPreviewContainer">
+                <!-- Injected preview (image or iframe) -->
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <span id="docMetaInfo" style="font-size: 13px; color: var(--text-muted);"></span>
+                <a id="docDownloadLink" href="#" target="_blank" class="btn btn-sm btn-outline">Open in Full Tab ↗</a>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('docPreviewModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+    // Sidebar Toggle for Mobile
+    const sidebarToggle = document.getElementById('sidebarToggleBtn');
+    const sidebar = document.getElementById('adminSidebar');
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+    }
+
+    // Modal Handlers
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // Close on overlay click
+    window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Document Preview Lightbox
+    function previewDocument(url, title, studentMeta) {
+        const container = document.getElementById('docPreviewContainer');
+        const modalTitle = document.getElementById('docModalTitle');
+        const metaSpan = document.getElementById('docMetaInfo');
+        const downloadLink = document.getElementById('docDownloadLink');
+
+        if (!container) return;
+
+        modalTitle.textContent = title || 'Document Preview';
+        metaSpan.textContent = studentMeta || '';
+        downloadLink.href = url;
+
+        const isPdf = url.toLowerCase().endsWith('.pdf') || url.includes('.pdf');
+
+        if (isPdf) {
+            container.innerHTML = `<iframe src="${url}" title="Document PDF"></iframe>`;
+        } else {
+            container.innerHTML = `<img src="${url}" alt="Verification Document" />`;
+        }
+
+        openModal('docPreviewModal');
+    }
+</script>
+{% block extra_js %}{% endblock %}
+<script src="{% static 'js/global_ui.js' %}"></script>
+
+</body>
+</html>

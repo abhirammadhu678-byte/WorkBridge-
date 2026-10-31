@@ -1,0 +1,326 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Manage Job Applications{% endblock %}
+{% block breadcrumb %}Applications Management{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">Job Applications Management 📄</h1>
+        <p class="page-subtitle">Track student submissions, verify candidate match, update hiring stages, and audit applications.</p>
+    </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card">
+    <div class="filter-left">
+        <!-- Status Filter Pills -->
+        <div class="filter-pills">
+            <a href="{% url 'admin_applications' %}?status=all{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'all' or not status_filter %}active{% endif %}">
+                <span>All</span>
+                <span class="pill-count">{{ total_apps_count }}</span>
+            </a>
+            <a href="{% url 'admin_applications' %}?status=Pending{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Pending' %}active{% endif %}">
+                <span>⏳ Pending</span>
+                <span class="pill-count">{{ pending_count }}</span>
+            </a>
+            <a href="{% url 'admin_applications' %}?status=Shortlisted{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Shortlisted' %}active{% endif %}">
+                <span>🔍 Shortlisted</span>
+                <span class="pill-count">{{ shortlisted_count }}</span>
+            </a>
+            <a href="{% url 'admin_applications' %}?status=Accepted{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Accepted' %}active{% endif %}">
+                <span>🤝 Accepted</span>
+                <span class="pill-count">{{ accepted_count }}</span>
+            </a>
+            <a href="{% url 'admin_applications' %}?status=Completed{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Completed' %}active{% endif %}">
+                <span>✅ Completed</span>
+                <span class="pill-count">{{ completed_count }}</span>
+            </a>
+            <a href="{% url 'admin_applications' %}?status=Rejected{% if search_q %}&q={{ search_q }}{% endif %}{% if job_id %}&job={{ job_id }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Rejected' %}active{% endif %}">
+                <span>❌ Rejected</span>
+                <span class="pill-count">{{ rejected_count }}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Job Filter -->
+    <div class="filter-right">
+        <form method="GET" action="{% url 'admin_applications' %}" style="display: flex; gap: 8px;">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <select name="job" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all">All Jobs</option>
+                {% for j in all_jobs %}
+                    <option value="{{ j.id }}" {% if job_id == j.id|stringformat:"i" %}selected{% endif %}>{{ j.job_title|truncatechars:25 }}</option>
+                {% endfor %}
+            </select>
+            <div class="search-input-wrap">
+                <span class="search-icon-pos">🔍</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search student, email, job...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if search_q or job_id or status_filter != 'all' %}
+                <a href="{% url 'admin_applications' %}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- APPLICATIONS TABLE -->
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="table-card-title">
+            <span>Student Applications</span>
+            <span class="badge badge-student">{{ applications|length }} Total</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Applicant Student</th>
+                    <th>Target Job & Employer</th>
+                    <th>Availability</th>
+                    <th>Applied Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-cell-avatar">
+                                {% if app.student.student_profile.profile_photo %}
+                                    <img src="{{ app.student.student_profile.profile_photo.url }}" alt="{{ app.student.username }}">
+                                {% else %}
+                                    {{ app.student.student_profile.full_name|default:app.student.username|slice:":1"|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="user-cell-info">
+                                <span class="user-cell-name">{{ app.student.student_profile.full_name|default:app.student.username }}</span>
+                                <span class="user-cell-sub">📧 {{ app.student.email }}</span>
+                                {% if app.student.student_profile.college %}
+                                    <span class="user-cell-sub">🏛️ {{ app.student.student_profile.college }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ app.job.job_title }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            Employer: <strong>{% if app.job.customer %}{{ app.job.customer.customer_profile.full_name|default:app.job.customer.username }}{% else %}Unassigned / System{% endif %}</strong>
+                        </div>
+                        <div style="font-size: 12px; color: var(--primary);">📍 {{ app.job.location }}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary);">{{ app.availability }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 13px; font-weight: 600;">{{ app.applied_at|date:"M d, Y" }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">{{ app.applied_at|time:"H:i" }}</div>
+                    </td>
+                    <td>
+                        {% if app.status == 'Pending' %}
+                            <span class="badge badge-pending"><span class="status-dot status-dot-amber"></span> Pending</span>
+                        {% elif app.status == 'Shortlisted' %}
+                            <span class="badge badge-shortlisted"><span class="status-dot status-dot-blue"></span> Shortlisted</span>
+                        {% elif app.status == 'Accepted' or app.status == 'Approved' %}
+                            <span class="badge badge-accepted"><span class="status-dot status-dot-green"></span> {{ app.status }}</span>
+                        {% elif app.status == 'Completed' %}
+                            <span class="badge badge-completed">✨ Completed</span>
+                        {% elif app.status == 'Rejected' %}
+                            <span class="badge badge-rejected"><span class="status-dot status-dot-red"></span> Rejected</span>
+                        {% else %}
+                            <span class="badge badge-inactive">{{ app.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <!-- VIEW APPLICATION DETAILS -->
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                    onclick="openAppDetailsModal('{{ app.student.student_profile.full_name|default:app.student.username|escapejs }}', '{{ app.student.email|escapejs }}', '{{ app.student.student_profile.mobile|default:"N/A"|escapejs }}', '{{ app.job.job_title|escapejs }}', '{% if app.job.customer %}{{ app.job.customer.customer_profile.full_name|default:app.job.customer.username|escapejs }}{% else %}Unassigned{% endif %}', '{{ app.availability|escapejs }}', '{{ app.status|escapejs }}', '{{ app.cover_message|escapejs }}', '{{ app.applied_at|date:"M d, Y H:i"|escapejs }}')"
+                                    title="View Full Application">
+                                👁️ View
+                            </button>
+
+
+                            <!-- CHANGE STATUS -->
+                            <button type="button" class="btn btn-sm btn-outline-success" 
+                                    onclick="openStatusModal('{{ app.id }}', '{{ app.student.student_profile.full_name|default:app.student.username|escapejs }}', '{{ app.job.job_title|escapejs }}', '{{ app.status|escapejs }}')"
+                                    title="Update Application Status">
+                                🔄 Status
+                            </button>
+
+                            <!-- DELETE -->
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    onclick="openDeleteAppModal('{{ app.id }}', '{{ app.student.student_profile.full_name|default:app.student.username|escapejs }}', '{{ app.job.job_title|escapejs }}')"
+                                    title="Delete Application">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">📄</div>
+                            <div class="empty-title">No Applications Found</div>
+                            <div class="empty-subtitle">There are no job applications matching your selected filters.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: VIEW APPLICATION DETAILS
+     ========================================================= -->
+<div class="modal-overlay" id="appDetailsModal">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">Application Inspection</h3>
+            <button type="button" class="modal-close-btn" onclick="closeModal('appDetailsModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Student Applicant</label>
+                    <div id="appModalStudent" style="font-weight: 700; color: var(--text-primary);"></div>
+                    <div id="appModalEmail" style="font-size: 12px; color: var(--text-muted);"></div>
+                    <div id="appModalMobile" style="font-size: 12px; color: var(--text-muted);"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Target Job & Customer</label>
+                    <div id="appModalJob" style="font-weight: 700; color: var(--primary);"></div>
+                    <div id="appModalEmployer" style="font-size: 12px; color: var(--text-muted);"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Availability Offered</label>
+                    <div id="appModalAvailability" style="font-weight: 600; color: var(--text-primary);"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Current Status</label>
+                    <div id="appModalStatus"></div>
+                </div>
+
+                <div class="form-group form-grid-full">
+                    <label class="form-label">Cover Message / Pitch</label>
+                    <div id="appModalMessage" style="font-size: 13.5px; color: var(--text-secondary); background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); white-space: pre-wrap; line-height: 1.6;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('appDetailsModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: CHANGE APPLICATION STATUS
+     ========================================================= -->
+<div class="modal-overlay" id="changeStatusModal">
+    <div class="modal-box">
+        <form method="POST" action="" id="changeStatusForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Override Application Status</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('changeStatusModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                    Update application status for <strong id="statusStudentName">Student</strong> on job <strong id="statusJobTitle">Job</strong>.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label" for="selectAppStatus">New Application Status <span style="color: var(--danger);">*</span></label>
+                    <select name="status" id="selectAppStatus" class="form-select" required>
+                        {% for st in status_choices %}
+                            <option value="{{ st }}">{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="form-hint">The student will receive an automatic system notification about this status change.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('changeStatusModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: DELETE APPLICATION CONFIRMATION
+     ========================================================= -->
+<div class="modal-overlay" id="deleteAppModal">
+    <div class="modal-box">
+        <form method="POST" action="" id="deleteAppForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--danger);">Delete Application</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('deleteAppModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary);">
+                    Are you sure you want to delete <strong id="deleteAppStudent"></strong>'s application for <strong id="deleteAppJob"></strong>?
+                </p>
+                <p style="font-size: 13px; color: var(--danger); margin-top: 10px; font-weight: 600;">
+                    ⚠️ This will remove the applicant from the employer's candidate roster.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAppModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Yes, Delete Application</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openAppDetailsModal(student, email, mobile, job, employer, availability, status, message, appliedAt) {
+        document.getElementById('appModalStudent').textContent = student;
+        document.getElementById('appModalEmail').textContent = '📧 ' + email;
+        document.getElementById('appModalMobile').textContent = '📞 ' + mobile;
+        document.getElementById('appModalJob').textContent = job;
+        document.getElementById('appModalEmployer').textContent = 'Employer: ' + employer;
+        document.getElementById('appModalAvailability').textContent = availability;
+        document.getElementById('appModalStatus').innerHTML = '<span class="badge badge-student">' + status + '</span>';
+        document.getElementById('appModalMessage').textContent = message || 'No cover letter provided.';
+        openModal('appDetailsModal');
+    }
+
+    function openStatusModal(id, student, job, currentStatus) {
+        document.getElementById('statusStudentName').textContent = student;
+        document.getElementById('statusJobTitle').textContent = job;
+        document.getElementById('selectAppStatus').value = currentStatus;
+        document.getElementById('changeStatusForm').action = '/admin-dashboard/applications/' + id + '/status/';
+        openModal('changeStatusModal');
+    }
+
+    function openDeleteAppModal(id, student, job) {
+        document.getElementById('deleteAppStudent').textContent = student;
+        document.getElementById('deleteAppJob').textContent = job;
+        document.getElementById('deleteAppForm').action = '/admin-dashboard/applications/' + id + '/delete/';
+        openModal('deleteAppModal');
+    }
+</script>
+{% endblock %}

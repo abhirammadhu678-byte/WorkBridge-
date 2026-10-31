@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+    <style>
+        .dashboard-grid-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .dashboard-grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <!-- Welcome Banner -->
+        <header class="page-header">
+            <div>
+                <h1 class="page-header-title">Welcome back, {{ student_profile.full_name|default:request.user.username }} 👋</h1>
+                <p class="page-header-subtitle">Track your job applications, discover flexible opportunities, and showcase your skills.</p>
+            </div>
+            <div class="page-header-actions">
+                <a href="{% url 'available_jobs' %}" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Browse Available Jobs
+                </a>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="stats-grid">
+            <div class="stat-card stat-blue">
+                <div class="stat-info">
+                    <div class="stat-label">Total Applied</div>
+                    <div class="stat-value">{{ total_applications }}</div>
+                    <span class="stat-trend">📌 All submissions</span>
+                </div>
+                <div class="stat-icon-box stat-icon-blue">📋</div>
+            </div>
+
+            <div class="stat-card stat-amber">
+                <div class="stat-info">
+                    <div class="stat-label">In Review</div>
+                    <div class="stat-value">{{ pending_count }}</div>
+                    <span class="stat-trend" style="color: var(--warning-text);">⏳ Pending employer review</span>
+                </div>
+                <div class="stat-icon-box stat-icon-amber">⏳</div>
+            </div>
+
+            <div class="stat-card stat-green">
+                <div class="stat-info">
+                    <div class="stat-label">Active / Hired</div>
+                    <div class="stat-value">{{ active_count }}</div>
+                    <span class="stat-trend" style="color: var(--success-text);">🎯 Ongoing engagements</span>
+                </div>
+                <div class="stat-icon-box stat-icon-green">🎯</div>
+            </div>
+
+            <div class="stat-card stat-purple">
+                <div class="stat-info">
+                    <div class="stat-label">Completed Gigs</div>
+                    <div class="stat-value">{{ completed_count }}</div>
+                    <span class="stat-trend" style="color: var(--purple-text);">🏆 Successfully finished</span>
+                </div>
+                <div class="stat-icon-box stat-icon-purple">🏆</div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            
+            <!-- Left Column: Recent Applications & Recommended Jobs -->
+            <div>
+                
+                <!-- Recent Applications Section -->
+                <div class="portal-card">
+                    <div class="portal-card-header">
+                        <div>
+                            <h2 class="portal-card-title">
+                                <span>📌</span> Recent Applications
+                            </h2>
+                            <p class="portal-card-desc">Track status updates and employer feedback.</p>
+                        </div>
+                        <a href="{% url 'applied_jobs' %}" class="btn btn-sm btn-outline">View All ({{ total_applications }})</a>
+                    </div>
+
+                    {% if recent_applications %}
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            {% for app in recent_applications %}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); flex-wrap: wrap; gap: 10px; transition: transform var(--transition-fast);">
+                                    <div>
+                                        <h4 style="font-size: 15px; font-weight: 700; color: var(--slate-900);">{{ app.job.job_title }}</h4>
+                                        <p style="font-size: 13px; color: var(--slate-500); margin-top: 2px;">
+                                            📍 {{ app.job.location }} &bull; ⏱️ {{ app.job.work_duration }} &bull; Applied {{ app.applied_at|date:"M d, Y" }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        {% if app.status == 'Pending' %}
+                                            <span class="status-badge status-pending">Pending Review</span>
+                                        {% elif app.status == 'Shortlisted' %}
+                                            <span class="status-badge status-shortlisted">Shortlisted ⭐</span>
+                                        {% elif app.status == 'Accepted' %}
+                                            <span class="status-badge status-accepted">Hired / Accepted ✓</span>
+                                        {% elif app.status == 'Completed' %}
+                                            <span class="status-badge status-completed">Completed 🏆</span>
+                                        {% elif app.status == 'Rejected' %}
+                                            <span class="status-badge status-rejected">Rejected</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state-box">
+                            <span class="empty-state-icon">💼</span>
+                            <h3 class="empty-state-title">No Applications Submitted Yet</h3>
+                            <p class="empty-state-desc">You haven't applied to any job postings yet. Find openings that match your skill set and submit an application.</p>
+                            <a href="{% url 'available_jobs' %}" class="btn btn-primary btn-sm">Explore Openings</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Recommended Jobs Section -->
+                <div class="portal-card">
+                    <div class="portal-card-header">
+                        <div>
+                            <h2 class="portal-card-title">
+                                <span>✨</span> Recommended Opportunities
+                            </h2>
+                            <p class="portal-card-desc">Curated student gigs based on latest postings.</p>
+                        </div>
+                        <a href="{% url 'available_jobs' %}" class="btn btn-sm btn-outline">Browse All</a>
+                    </div>
+
+                    {% if recommended_jobs %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                            {% for job in recommended_jobs %}
+                                <div class="job-card" style="{% if job.is_expired %}background: #fafafa; border-color: var(--danger-border);{% endif %}">
+                                    <div>
+                                        <div class="job-card-top">
+                                            {% if job.is_expired %}
+                                                <span class="status-badge" style="font-size: 10px; background: #fee2e2; color: #dc2626;">⚠️ Date Passed</span>
+                                            {% elif job.is_today %}
+                                                <span class="status-badge" style="font-size: 10px; background: #d1fae5; color: #065f46;">🟢 Today</span>
+                                            {% else %}
+                                                <span class="status-badge status-shortlisted" style="font-size: 10px;">Active Opening</span>
+                                            {% endif %}
+                                            <span style="font-size: 12px; color: var(--slate-400);">{{ job.created_at|timesince }} ago</span>
+                                        </div>
+
+                                        <h4 class="job-card-title" style="font-size: 16px;">{{ job.job_title }}</h4>
+                                        <p class="job-card-desc" style="font-size: 13px; margin-bottom: 12px;">
+                                            {{ job.description|truncatewords:14 }}
+                                        </p>
+
+                                        <div class="job-meta-grid" style="font-size: 12px; padding: 10px; margin-bottom: 14px;">
+                                            <div class="job-meta-item">📍 {{ job.location }}</div>
+                                            <div class="job-meta-item">⏱️ {{ job.work_duration }}</div>
+                                            <div class="job-meta-item" style="grid-column: 1 / -1; {% if job.is_expired %}color: #dc2626; font-weight: 600;{% endif %}">
+                                                📅 Date: {{ job.work_date|date:"M d, Y" }} {% if job.is_expired %}(Passed){% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {% if job.is_expired %}
+                                            <button class="btn btn-secondary btn-sm" disabled style="width: 100%; opacity: 0.65; cursor: not-allowed; background: #e2e8f0; color: #64748b; border: none;">Date Expired</button>
+                                        {% else %}
+                                            <a href="{% url 'apply_job' job.id %}" class="btn btn-primary btn-sm" style="width: 100%;">Apply Now &rarr;</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state-box" style="padding: 30px 16px;">
+                            <span class="empty-state-icon" style="width: 54px; height: 54px; font-size: 26px;">🔍</span>
+                            <p style="color: var(--slate-500); font-size: 14px;">No new recommendations available at the moment.</p>
+                            <a href="{% url 'available_jobs' %}" class="btn btn-outline btn-sm" style="margin-top: 10px;">Check All Openings</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- Right Column: Verification & Profile Health & Portfolio -->
+            <div>
+                
+                <!-- Verification Status Box -->
+                <div class="portal-card" style="border-left: 4px solid {% if student_profile.is_verified %}var(--success){% elif student_profile.is_rejected %}var(--danger){% else %}var(--warning){% endif %};">
+                    <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-900); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        {% if student_profile.is_verified %}
+                            <span style="color: var(--success);">✓</span> Verified Student Status
+                        {% elif student_profile.is_rejected %}
+                            <span style="color: var(--danger);">✕</span> Verification Rejected
+                        {% elif student_profile.college_id %}
+                            <span style="color: var(--warning);">⏳</span> Verification Pending Approval
+                        {% else %}
+                            <span style="color: var(--warning);">⚠️</span> College ID Not Verified
+                        {% endif %}
+                    </h3>
+                    <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 12px; line-height: 1.5;">
+                        {% if student_profile.is_verified %}
+                            Your college credentials are authenticated. You are eligible for all student job opportunities.
+                        {% elif student_profile.is_rejected %}
+                            Your ID document was declined by admin. Please upload a clear photo of your student identity card.
+                        {% elif student_profile.college_id %}
+                            Your verification document is under review by the administrator.
+                        {% else %}
+                            Please upload your college identity card to complete student verification.
+                        {% endif %}
+                    </p>
+                    {% if not student_profile.is_verified %}
+                        <a href="{% url 'student_verification' %}" class="btn btn-secondary btn-sm" style="width: 100%;">
+                            {% if student_profile.is_rejected %}Re-Upload College ID{% else %}Submit Verification ID{% endif %}
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Profile Strength -->
+                <div class="portal-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--slate-900);">Profile Strength</h3>
+                        <span style="font-weight: 800; color: var(--primary); font-size: 15px;">{{ profile_strength }}%</span>
+                    </div>
+                    <div style="background: var(--slate-200); height: 8px; border-radius: var(--radius-full); overflow: hidden; margin-bottom: 16px;">
+                        <div style="background: var(--brand-gradient); height: 100%; width: {{ profile_strength }}%; border-radius: var(--radius-full); transition: width 0.4s ease;"></div>
+                    </div>
+
+                    <ul style="list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                        <li style="display: flex; align-items: center; gap: 8px; color: {% if student_profile.profile_photo %}var(--success){% else %}var(--slate-400){% endif %};">
+                            <span>{% if student_profile.profile_photo %}✓{% else %}○{% endif %}</span> Profile photo added
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: {% if student_profile.skills %}var(--success){% else %}var(--slate-400){% endif %};">
+                            <span>{% if student_profile.skills %}✓{% else %}○{% endif %}</span> Skills & expertise tagged
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: {% if student_profile.resume %}var(--success){% else %}var(--slate-400){% endif %};">
+                            <span>{% if student_profile.resume %}✓{% else %}○{% endif %}</span> Resume uploaded
+                        </li>
+                        <li style="display: flex; align-items: center; gap: 8px; color: {% if portfolio_count %}var(--success){% else %}var(--slate-400){% endif %};">
+                            <span>{% if portfolio_count %}✓{% else %}○{% endif %}</span> Portfolio projects showcased ({{ portfolio_count }})
+                        </li>
+                    </ul>
+
+                    <a href="{% url 'student_profile' %}" class="btn btn-outline btn-sm" style="width: 100%;">Complete Profile</a>
+                </div>
+
+                <!-- Portfolio Quick Preview -->
+                <div class="portal-card">
+                    <div class="portal-card-header">
+                        <h3 class="portal-card-title" style="font-size: 16px;">
+                            <span>🎨</span> My Portfolio ({{ portfolio_count }})
+                        </h3>
+                        <a href="{% url 'portfolio' %}" class="btn btn-sm btn-outline">+ Add</a>
+                    </div>
+
+                    {% if portfolios %}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            {% for p in portfolios %}
+                                <div style="border-radius: var(--radius-sm); overflow: hidden; background: var(--slate-100); border: 1px solid var(--slate-200); position: relative;">
+                                    {% if p.photo %}
+                                        <img src="{{ p.photo.url }}" alt="{{ p.work_title }}" style="width: 100%; height: 80px; object-fit: cover;">
+                                    {% elif p.reel %}
+                                        <div style="height: 80px; display: flex; align-items: center; justify-content: center; background: var(--purple-light); color: var(--purple); font-size: 20px;">🎬</div>
+                                    {% else %}
+                                        <div style="height: 80px; display: flex; align-items: center; justify-content: center; background: var(--slate-200); color: var(--slate-400); font-size: 20px;">🖼️</div>
+                                    {% endif %}
+                                    <div style="padding: 6px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white;">
+                                        {{ p.work_title }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state-box" style="padding: 20px 12px;">
+                            <p style="font-size: 13px; color: var(--slate-500); margin-bottom: 12px;">Add photos, designs, or video reels to stand out to employers.</p>
+                            <a href="{% url 'portfolio' %}" class="btn btn-secondary btn-sm" style="width: 100%;">Upload First Project</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Manage Job Listings{% endblock %}
+{% block breadcrumb %}Jobs Management{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">Job Listings Management 💼</h1>
+        <p class="page-subtitle">Inspect posted student gigs, review applicant volumes, and manage active job listings.</p>
+    </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card">
+    <div class="filter-left">
+        <form method="GET" action="{% url 'admin_jobs' %}" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+            <!-- Location Filter -->
+            <select name="location" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all">All Locations</option>
+                {% for loc in distinct_locations %}
+                    <option value="{{ loc }}" {% if location_filter == loc %}selected{% endif %}>{{ loc }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Duration Filter -->
+            <select name="duration" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all">All Durations</option>
+                {% for dur in distinct_durations %}
+                    <option value="{{ dur }}" {% if duration_filter == dur %}selected{% endif %}>{{ dur }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Customer Filter -->
+            <select name="customer" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all">All Employers</option>
+                {% for cust in all_customers %}
+                    <option value="{{ cust.id }}" {% if customer_id == cust.id|stringformat:"i" %}selected{% endif %}>
+                        {{ cust.customer_profile.full_name|default:cust.username }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <div class="search-input-wrap">
+                <span class="search-icon-pos">🔍</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search title, skills, employer...">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            
+            {% if search_q or location_filter or duration_filter or customer_id %}
+                <a href="{% url 'admin_jobs' %}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- JOBS TABLE -->
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="table-card-title">
+            <span>Posted Jobs</span>
+            <span class="badge badge-student">{{ jobs|length }} Listings</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Job Title & Skills</th>
+                    <th>Employer / Customer</th>
+                    <th>Location & Duration</th>
+                    <th>Work Date</th>
+                    <th>Applicants</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary);">{{ job.job_title }}</div>
+                        <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px;">
+                            🛠️ {{ job.required_skills|default:"General Skills" }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-primary);">
+                            {% if job.customer %}
+                                {{ job.customer.customer_profile.full_name|default:job.customer.username }}
+                            {% else %}
+                                Unassigned / System
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            {% if job.customer %}📧 {{ job.customer.email }}{% else %}No Employer Email{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">📍 {{ job.location }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">⏱️ {{ job.work_duration }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 13.5px; font-weight: 600;">{{ job.work_date|date:"M d, Y" }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Posted {{ job.created_at|date:"M d" }}</div>
+                    </td>
+                    <td>
+                        <a href="{% url 'admin_applications' %}?job={{ job.id }}" class="badge badge-shortlisted" style="text-decoration: none;" title="View Applicants">
+                            👥 {{ job.applicant_count }} Applicants
+                        </a>
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <!-- VIEW DETAILS -->
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                    onclick="openJobViewModal('{{ job.job_title|escapejs }}', '{% if job.customer %}{{ job.customer.customer_profile.full_name|default:job.customer.username|escapejs }}{% else %}Unassigned{% endif %}', '{{ job.location|escapejs }}', '{{ job.work_duration|escapejs }}', '{{ job.work_date|date:"M d, Y"|escapejs }}', '{{ job.required_skills|default:"None specified"|escapejs }}', '{{ job.description|escapejs }}', '{{ job.applicant_count }}', '{{ job.id }}')"
+                                    title="View Job Details">
+                                👁️ View
+                            </button>
+
+                            <!-- EDIT JOB -->
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                    onclick="openJobEditModal('{{ job.id }}', '{{ job.job_title|escapejs }}', '{{ job.customer_id|default:"" }}', '{{ job.location|escapejs }}', '{{ job.required_skills|default:""|escapejs }}', '{{ job.work_date|date:"Y-m-d" }}', '{{ job.work_duration }}', '{{ job.description|escapejs }}')"
+                                    title="Edit Job">
+                                ✏️ Edit
+                            </button>
+
+
+                            <!-- DELETE JOB -->
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    onclick="openJobDeleteModal('{{ job.id }}', '{{ job.job_title|escapejs }}')"
+                                    title="Delete Job">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">💼</div>
+                            <div class="empty-title">No Jobs Found</div>
+                            <div class="empty-subtitle">There are no job postings matching your current filter criteria.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: VIEW JOB DETAILS
+     ========================================================= -->
+<div class="modal-overlay" id="viewJobModal">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="viewJobTitle">Job Details</h3>
+            <button type="button" class="modal-close-btn" onclick="closeModal('viewJobModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Employer</label>
+                    <div id="viewJobEmployer" style="font-weight: 600; color: var(--text-primary);"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location & Duration</label>
+                    <div id="viewJobLocationDuration" style="font-weight: 600; color: var(--text-primary);"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Work Date</label>
+                    <div id="viewJobDate" style="font-weight: 600; color: var(--text-primary);"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Total Applicants</label>
+                    <div><span class="badge badge-student" id="viewJobApplicants"></span></div>
+                </div>
+                <div class="form-group form-grid-full">
+                    <label class="form-label">Required Skills</label>
+                    <div id="viewJobSkills" style="font-weight: 600; color: var(--primary); background: var(--primary-light); padding: 8px 12px; border-radius: var(--radius-md);"></div>
+                </div>
+                <div class="form-group form-grid-full">
+                    <label class="form-label">Job Description</label>
+                    <div id="viewJobDesc" style="font-size: 13.5px; color: var(--text-secondary); background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); white-space: pre-wrap; line-height: 1.6;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="viewJobAppsLink" href="#" class="btn btn-primary">Inspect Applicants →</a>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('viewJobModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: EDIT JOB
+     ========================================================= -->
+<div class="modal-overlay" id="editJobModal">
+    <div class="modal-box modal-box-lg">
+        <form method="POST" action="" id="editJobForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Job Listing</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('editJobModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="edit_job_title">Job Title <span style="color: var(--danger);">*</span></label>
+                        <input type="text" name="job_title" id="edit_job_title" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_customer">Employer (Customer) <span style="color: var(--danger);">*</span></label>
+                        <select name="customer" id="edit_customer" class="form-select" required>
+                            {% for cust in all_customers %}
+                                <option value="{{ cust.id }}">{{ cust.customer_profile.full_name|default:cust.username }} ({{ cust.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_location">Location / City <span style="color: var(--danger);">*</span></label>
+                        <input type="text" name="location" id="edit_location" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_work_duration">Duration <span style="color: var(--danger);">*</span></label>
+                        <select name="work_duration" id="edit_work_duration" class="form-select" required>
+                            {% for dur in distinct_durations %}
+                                <option value="{{ dur }}">{{ dur }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_work_date">Work Date <span style="color: var(--danger);">*</span></label>
+                        <input type="date" name="work_date" id="edit_work_date" class="form-input" required>
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="edit_required_skills">Required Skills</label>
+                        <input type="text" name="required_skills" id="edit_required_skills" class="form-input" placeholder="e.g. Graphic Design, Video Editing, Event Coordination">
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="edit_description">Description <span style="color: var(--danger);">*</span></label>
+                        <textarea name="description" id="edit_description" class="form-textarea" rows="4" required></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editJobModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Job Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: DELETE JOB CONFIRMATION
+     ========================================================= -->
+<div class="modal-overlay" id="deleteJobModal">
+    <div class="modal-box">
+        <form method="POST" action="" id="deleteJobForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--danger);">Delete Job Listing</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('deleteJobModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary);">
+                    Are you sure you want to permanently delete the job opening <strong id="deleteJobTitle" style="color: var(--text-primary);"></strong>?
+                </p>
+                <p style="font-size: 13px; color: var(--danger); margin-top: 10px; font-weight: 600;">
+                    ⚠️ All student applications and work completions linked to this job will also be deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteJobModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Yes, Delete Job</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openJobViewModal(title, employer, location, duration, workDate, skills, desc, applicants, jobId) {
+        document.getElementById('viewJobTitle').textContent = title;
+        document.getElementById('viewJobEmployer').textContent = employer;
+        document.getElementById('viewJobLocationDuration').textContent = location + ' • ' + duration;
+        document.getElementById('viewJobDate').textContent = workDate;
+        document.getElementById('viewJobApplicants').textContent = applicants + ' Applications';
+        document.getElementById('viewJobSkills').textContent = skills;
+        document.getElementById('viewJobDesc').textContent = desc;
+        document.getElementById('viewJobAppsLink').href = "/admin-dashboard/applications/?job=" + jobId;
+        openModal('viewJobModal');
+    }
+
+    function openJobEditModal(id, title, customerId, location, skills, workDate, duration, desc) {
+        document.getElementById('editJobForm').action = '/admin-dashboard/jobs/' + id + '/edit/';
+        document.getElementById('edit_job_title').value = title;
+        document.getElementById('edit_customer').value = customerId;
+        document.getElementById('edit_location').value = location;
+        document.getElementById('edit_required_skills').value = skills;
+        document.getElementById('edit_work_date').value = workDate;
+        document.getElementById('edit_work_duration').value = duration;
+        document.getElementById('edit_description').value = desc;
+        openModal('editJobModal');
+    }
+
+    function openJobDeleteModal(id, title) {
+        document.getElementById('deleteJobTitle').textContent = title;
+        document.getElementById('deleteJobForm').action = '/admin-dashboard/jobs/' + id + '/delete/';
+        openModal('deleteJobModal');
+    }
+</script>
+{% endblock %}

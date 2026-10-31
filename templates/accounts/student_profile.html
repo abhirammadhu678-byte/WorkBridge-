@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+    <style>
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .profile-hero-card {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .profile-avatar-large {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--primary), var(--purple));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 800;
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+            border: 4px solid white;
+        }
+
+        .profile-avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-meta-list {
+            list-style: none;
+            margin-top: 20px;
+            border-top: 1px solid var(--slate-100);
+            padding-top: 16px;
+            text-align: left;
+            font-size: 13.5px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--slate-600);
+        }
+
+        .profile-meta-icon {
+            font-size: 16px;
+            width: 24px;
+            text-align: center;
+            color: var(--slate-400);
+        }
+
+        .tab-button-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: var(--slate-100);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            width: fit-content;
+        }
+
+        .tab-btn {
+            padding: 8px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--slate-600);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--slate-900);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info-section {
+            margin-bottom: 24px;
+        }
+
+        .info-section-title {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            font-size: 14px;
+            color: var(--slate-700);
+            line-height: 1.6;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 860px) {
+            .profile-layout {
+                grid-template-columns: 1fr;
+            }
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header-title">Student Profile</h1>
+                <p class="page-header-subtitle">Manage your personal details, academic information, resume, and professional skills.</p>
+            </div>
+        </header>
+
+        <div class="profile-layout">
+            
+            <!-- Left Sidebar Card: Avatar & Primary Info -->
+            <div class="portal-card profile-hero-card">
+                <div class="profile-avatar-large">
+                    {% if student_profile.profile_photo %}
+                        <img src="{{ student_profile.profile_photo.url }}" alt="{{ student_profile.full_name }}">
+                    {% else %}
+                        {{ student_profile.full_name|default:request.user.username|first|upper }}
+                    {% endif %}
+                </div>
+
+                <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 800; color: var(--slate-900);">
+                    {{ student_profile.full_name|default:request.user.username }}
+                </h2>
+                <p style="color: var(--slate-500); font-size: 13.5px; margin-top: 2px;">
+                    {{ student_profile.course|default:"Student" }} &bull; {{ student_profile.college|default:"WorkBridge Member" }}
+                </p>
+
+                <div style="margin-top: 12px;">
+                    {% if student_profile.is_verified %}
+                        <span class="status-badge status-accepted">✓ Verified Student</span>
+                    {% elif student_profile.is_rejected %}
+                        <span class="status-badge status-rejected">Verification Rejected</span>
+                    {% elif student_profile.college_id %}
+                        <span class="status-badge status-pending">Verification Pending</span>
+                    {% else %}
+                        <span class="status-badge status-pending">ID Not Uploaded</span>
+                    {% endif %}
+                </div>
+
+                <ul class="profile-meta-list">
+                    <li class="profile-meta-item">
+                        <span class="profile-meta-icon">📧</span>
+                        <span>{{ request.user.email }}</span>
+                    </li>
+                    <li class="profile-meta-item">
+                        <span class="profile-meta-icon">📱</span>
+                        <span>{{ student_profile.mobile|default:"No phone added" }}</span>
+                    </li>
+                    <li class="profile-meta-item">
+                        <span class="profile-meta-icon">🏫</span>
+                        <span>{{ student_profile.college|default:"No college specified" }}</span>
+                    </li>
+                    <li class="profile-meta-item">
+                        <span class="profile-meta-icon">📍</span>
+                        <span>
+                            {% if student_profile.place %}{{ student_profile.place.name }}, {% endif %}
+                            {{ student_profile.district|default:"Kerala" }}
+                        </span>
+                    </li>
+                    {% if student_profile.resume %}
+                    <li class="profile-meta-item">
+                        <span class="profile-meta-icon">📄</span>
+                        <a href="{{ student_profile.resume.url }}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: underline;">Download Resume (PDF)</a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('edit')">
+                        ✏️ Edit Profile Info
+                    </button>
+                    <a href="{% url 'portfolio' %}" class="btn btn-secondary btn-sm">
+                        🎨 View Portfolio ({{ portfolio_count }})
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column: Tabs (Overview Showcase & Edit Form) -->
+            <div>
+                <div class="tab-button-group">
+                    <button class="tab-btn active" id="tabBtnOverview" onclick="switchTab('overview')">Profile Overview</button>
+                    <button class="tab-btn" id="tabBtnEdit" onclick="switchTab('edit')">Edit Profile</button>
+                </div>
+
+                <!-- TAB 1: Profile Overview Showcase -->
+                <div id="tabOverview" class="portal-card">
+                    
+                    <!-- About Me -->
+                    <div class="info-section">
+                        <h3 class="info-section-title"><span>👤</span> About Me</h3>
+                        <div class="info-box">
+                            {% if student_profile.about_me %}
+                                {{ student_profile.about_me|linebreaks }}
+                            {% else %}
+                                <span style="color: var(--slate-400); font-style: italic;">No bio added yet. Click "Edit Profile" to write a summary for employers.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="info-section">
+                        <h3 class="info-section-title"><span>⚡</span> Skills & Expertise</h3>
+                        {% if skills_list %}
+                            <div class="skills-pill-container">
+                                {% for skill in skills_list %}
+                                    <span class="skill-tag">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="info-box" style="color: var(--slate-400); font-style: italic;">No skills listed. Add skills to match with job openings.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Experience -->
+                    <div class="info-section">
+                        <h3 class="info-section-title"><span>💼</span> Work & Practical Experience</h3>
+                        <div class="info-box">
+                            {% if student_profile.experience %}
+                                {{ student_profile.experience|linebreaks }}
+                            {% else %}
+                                <span style="color: var(--slate-400); font-style: italic;">No previous experience details added.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Education -->
+                    <div class="info-section">
+                        <h3 class="info-section-title"><span>🎓</span> Education & Qualifications</h3>
+                        <div class="info-box">
+                            {% if student_profile.education %}
+                                {{ student_profile.education|linebreaks }}
+                            {% else %}
+                                <span style="color: var(--slate-400); font-style: italic;">
+                                    {{ student_profile.course|default:"Undergraduate" }} &bull; {{ student_profile.college|default:"" }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Employer Reviews -->
+                    {% if reviews %}
+                    <div class="info-section">
+                        <h3 class="info-section-title"><span>⭐</span> Feedback & Reviews Received</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            {% for r in reviews %}
+                                <div style="padding: 14px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <strong style="font-size: 14px; color: var(--slate-900);">{{ r.customer.customer_profile.full_name|default:r.customer.username }}</strong>
+                                        <span style="color: #f59e0b; font-weight: 700;">{{ r.rating }} ⭐</span>
+                                    </div>
+                                    <p style="font-size: 13px; color: var(--slate-600); margin-top: 4px;">"{{ r.review_comment }}"</p>
+                                    <span style="font-size: 11px; color: var(--slate-400); display: block; margin-top: 6px;">For job: {{ r.job.job_title }} &bull; {{ r.created_at|date:"M d, Y" }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- TAB 2: Profile Edit Form -->
+                <div id="tabEdit" class="portal-card" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="portal-card-title" style="margin-bottom: 0;">
+                            <span>✏️</span> Edit Profile Information
+                        </h2>
+                        <span style="font-size: 13px; color: var(--slate-500);">Keep your information updated for recruiters</span>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert-item alert-error" style="margin-bottom: 18px;">
+                            {% for err in form.non_field_errors %}
+                                <div>{{ err }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data" id="profileEditForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.full_name.id_for_label }}">Full Name</label>
+                                {{ form.full_name }}
+                                {% if form.full_name.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.full_name.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.mobile.id_for_label }}">Mobile Number</label>
+                                {{ form.mobile }}
+                                {% if form.mobile.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.mobile.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.college.id_for_label }}">College / University</label>
+                                {{ form.college }}
+                                {% if form.college.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.college.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.course.id_for_label }}">Degree / Course</label>
+                                {{ form.course }}
+                                {% if form.course.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.course.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.semester.id_for_label }}">Semester / Year</label>
+                                {{ form.semester }}
+                                {% if form.semester.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.semester.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.district.id_for_label }}">District</label>
+                                {{ form.district }}
+                                {% if form.district.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.district.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.place_name.id_for_label }}">City / Town / Place</label>
+                                {{ form.place_name }}
+                                {% if form.place_name.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.place_name.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.address.id_for_label }}">Residential Address</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.address.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.skills.id_for_label }}">Skills & Specializations (Comma-separated)</label>
+                            {{ form.skills }}
+                            <small style="color: var(--slate-500); font-size: 12px; display: block; margin-top: 4px;">Example: Python, Graphic Design, Photography, Social Media Management, Content Writing</small>
+                            {% if form.skills.errors %}
+                                <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.skills.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.about_me.id_for_label }}">About Me (Professional Bio)</label>
+                            {{ form.about_me }}
+                            {% if form.about_me.errors %}
+                                <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.about_me.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.experience.id_for_label }}">Work Experience</label>
+                            {{ form.experience }}
+                            {% if form.experience.errors %}
+                                <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.experience.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.education.id_for_label }}">Education Background</label>
+                            {{ form.education }}
+                            {% if form.education.errors %}
+                                <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.education.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.profile_photo.id_for_label }}">Profile Photo (JPG, PNG, WEBP &bull; Max 5MB)</label>
+                                {% if student_profile.profile_photo %}
+                                    <div style="font-size: 12px; color: var(--slate-600); margin-bottom: 6px;">
+                                        Current: <a href="{{ student_profile.profile_photo.url }}" target="_blank" style="color: var(--primary); text-decoration: underline;">View Current Photo</a>
+                                    </div>
+                                {% endif %}
+                                {{ form.profile_photo }}
+                                {% if form.profile_photo.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.profile_photo.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="{{ form.resume.id_for_label }}">Resume / CV Document (PDF, DOC, DOCX &bull; Max 10MB)</label>
+                                {% if student_profile.resume %}
+                                    <div style="font-size: 12px; color: var(--slate-600); margin-bottom: 6px;">
+                                        Current: <a href="{{ student_profile.resume.url }}" target="_blank" style="color: var(--primary); text-decoration: underline;">View Current Resume</a>
+                                    </div>
+                                {% endif %}
+                                {{ form.resume }}
+                                {% if form.resume.errors %}
+                                    <span class="field-error" style="color: #ef4444; font-size: 12.5px; margin-top: 4px; display: block; font-weight: 500;">{{ form.resume.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 24px;">
+                            <button type="submit" class="btn btn-primary" style="min-width: 180px;">💾 Save Profile Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="switchTab('overview')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        function switchTab(tabName) {
+            const overview = document.getElementById('tabOverview');
+            const edit = document.getElementById('tabEdit');
+            const btnOverview = document.getElementById('tabBtnOverview');
+            const btnEdit = document.getElementById('tabBtnEdit');
+
+            if (tabName === 'edit') {
+                overview.style.display = 'none';
+                edit.style.display = 'block';
+                btnOverview.classList.remove('active');
+                btnEdit.classList.add('active');
+            } else {
+                overview.style.display = 'block';
+                edit.style.display = 'none';
+                btnOverview.classList.add('active');
+                btnEdit.classList.remove('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if active_tab == 'edit' or form.errors %}
+                switchTab('edit');
+            {% endif %}
+        });
+    </script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+
+</body>
+</html>

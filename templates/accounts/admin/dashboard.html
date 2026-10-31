@@ -1,0 +1,323 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Dashboard Overview{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">Executive Dashboard ⚡</h1>
+        <p class="page-subtitle">Platform health, pending approvals, user directory, and activity logs.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_verifications' %}" class="btn btn-warning">
+            <span>🪪</span>
+            <span>Review Pending IDs ({{ pending_verifications_count }})</span>
+        </a>
+        <a href="{% url 'admin_users' %}" class="btn btn-primary">
+            <span>+ Add New User</span>
+        </a>
+    </div>
+</div>
+
+<!-- STAT METRICS GRID -->
+<div class="stats-grid">
+    <!-- Total Users -->
+    <div class="stat-card stat-card-indigo">
+        <div class="stat-info">
+            <span class="stat-label">Total Users</span>
+            <div class="stat-value">{{ total_users }}</div>
+            <span class="stat-desc">👨‍🎓 {{ total_students }} Students &bull; 🏢 {{ total_customers }} Employers</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-indigo">👥</div>
+    </div>
+
+    <!-- Pending Verifications -->
+    <div class="stat-card stat-card-amber">
+        <div class="stat-info">
+            <span class="stat-label">Pending Verifications</span>
+            <div class="stat-value">{{ pending_verifications_count }}</div>
+            <span class="stat-desc">✅ {{ verified_students_count }} Verified &bull; ❌ {{ rejected_verifications_count }} Rejected</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-amber">🪪</div>
+    </div>
+
+    <!-- Total Jobs -->
+    <div class="stat-card stat-card-emerald">
+        <div class="stat-info">
+            <span class="stat-label">Jobs Posted</span>
+            <div class="stat-value">{{ total_jobs }}</div>
+            <span class="stat-desc">💼 Across Kerala Districts</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-emerald">💼</div>
+    </div>
+
+    <!-- Total Applications -->
+    <div class="stat-card stat-card-sky">
+        <div class="stat-info">
+            <span class="stat-label">Job Applications</span>
+            <div class="stat-value">{{ total_applications }}</div>
+            <span class="stat-desc">⏳ {{ pending_apps }} Pending &bull; 🤝 {{ accepted_apps }} Accepted</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-sky">📄</div>
+    </div>
+
+    <!-- Moderation Reports -->
+    <div class="stat-card stat-card-rose">
+        <div class="stat-info">
+            <span class="stat-label">Moderation Reports</span>
+            <div class="stat-value">{{ pending_reports_count }}</div>
+            <span class="stat-desc">🛡️ {{ total_reports_count }} Total Reports Filed</span>
+        </div>
+        <div class="stat-icon-wrapper stat-icon-rose">🚨</div>
+    </div>
+</div>
+
+<!-- DASHBOARD GRID: PENDING VERIFICATIONS + RECENT ACTIVITY -->
+<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: start;">
+
+    <!-- LEFT COLUMN: PENDING VERIFICATION QUEUE -->
+    <div class="table-card">
+        <div class="table-card-header">
+            <div class="table-card-title">
+                <span>🪪</span>
+                <span>Pending Student Verifications</span>
+                <span class="badge badge-pending">{{ pending_verifications_count }} Awaiting</span>
+            </div>
+            <a href="{% url 'admin_verifications' %}" class="btn btn-sm btn-outline">View All →</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>College / Course</th>
+                        <th>College ID Document</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in recent_verifications %}
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-cell-avatar">
+                                    {% if student.profile_photo %}
+                                        <img src="{{ student.profile_photo.url }}" alt="{{ student.full_name }}">
+                                    {% else %}
+                                        {{ student.full_name|default:student.user.username|slice:":1"|upper }}
+                                    {% endif %}
+                                </div>
+                                <div class="user-cell-info">
+                                    <span class="user-cell-name">{{ student.full_name|default:student.user.username }}</span>
+                                    <span class="user-cell-sub">{{ student.user.email }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ student.college|default:"Not specified" }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">{{ student.course|default:"" }} {% if student.semester %}({{ student.semester }}){% endif %}</div>
+                        </td>
+                        <td>
+                            {% if student.college_id %}
+                                <button type="button" class="btn btn-sm btn-outline" 
+                                        onclick="previewDocument('{{ student.college_id.url }}', '{{ student.full_name|default:student.user.username }} - College ID', '{{ student.college|default:'' }}')">
+                                    <span>🔍 View Document</span>
+                                </button>
+                            {% else %}
+                                <span class="badge badge-missing">No Document</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="{% url 'approve_student_verification' student.id %}" class="btn btn-sm btn-success" title="Approve Student">
+                                    ✓ Approve
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="openRejectModal('{{ student.id }}', '{{ student.full_name|default:student.user.username }}')">
+                                    ✕ Reject
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <div class="empty-icon">🎉</div>
+                                <div class="empty-title">All Caught Up!</div>
+                                <div class="empty-subtitle">There are currently no pending student verification requests.</div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: LATEST JOBS & REPORTS -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- LATEST JOBS LISTING -->
+        <div class="table-card" style="margin-bottom: 0;">
+            <div class="table-card-header">
+                <div class="table-card-title">
+                    <span>💼</span>
+                    <span>Recent Job Openings</span>
+                </div>
+                <a href="{% url 'admin_jobs' %}" class="btn btn-sm btn-outline">Manage Jobs →</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Employer</th>
+                            <th>Applicants</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in recent_jobs %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 700; color: var(--text-primary);">{{ job.job_title }}</div>
+                                <div style="font-size: 12px; color: var(--text-muted);">📍 {{ job.location }} &bull; ⏱ {{ job.work_duration }}</div>
+                            </td>
+                            <td>
+                                <span style="font-size: 13px; font-weight: 600;">
+                                    {% if job.customer %}
+                                        {{ job.customer.customer_profile.full_name|default:job.customer.username }}
+                                    {% else %}
+                                        System / Unassigned
+                                    {% endif %}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge badge-student">{{ job.applicant_count }} applied</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No jobs posted yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RECENT MODERATION REPORTS -->
+        <div class="table-card" style="margin-bottom: 0;">
+            <div class="table-card-header">
+                <div class="table-card-title">
+                    <span>🛡️</span>
+                    <span>Recent Reports</span>
+                </div>
+                <a href="{% url 'admin_reports' %}" class="btn btn-sm btn-outline">Reports Center →</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Issue / Type</th>
+                            <th>Reporter</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in recent_reports %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 700; color: var(--text-primary);">{{ report.get_reason_display }}</div>
+                                <div style="font-size: 12px; color: var(--text-muted);">{{ report.get_report_type_display }}</div>
+                            </td>
+                            <td>
+                                <span style="font-size: 13px;">{{ report.reporter.username }}</span>
+                            </td>
+                            <td>
+                                {% if report.status == 'Pending' %}
+                                    <span class="badge badge-pending">Pending</span>
+                                {% elif report.status == 'Resolved' %}
+                                    <span class="badge badge-verified">Resolved</span>
+                                {% else %}
+                                    <span class="badge badge-inactive">{{ report.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No active moderation reports.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div class="modal-overlay" id="rejectReasonModal">
+    <div class="modal-box">
+        <form method="POST" id="rejectStudentForm" action="">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Reject Student Verification</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('rejectReasonModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                    You are rejecting verification for <strong id="rejectStudentName">Student</strong>. Please provide a reason so they can rectify their submission.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Preset Quick Reasons</label>
+                    <select class="form-select" onchange="setQuickReason(this.value)">
+                        <option value="">-- Choose a standard reason or type below --</option>
+                        <option value="College ID photo is blurry, unreadable or cut off.">College ID photo is blurry or unreadable</option>
+                        <option value="Uploaded ID card has expired. Please provide current academic year ID.">Expired student ID card</option>
+                        <option value="Student name on profile does not match the College ID card.">Name mismatch with ID</option>
+                        <option value="College name specified differs from document.">College name mismatch</option>
+                        <option value="Invalid document type uploaded. Please upload official college ID card.">Invalid document type</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="rejectionReasonText">Custom Rejection Reason <span style="color: var(--danger);">*</span></label>
+                    <textarea class="form-textarea" id="rejectionReasonText" name="reason" rows="3" required placeholder="State why this college ID was rejected..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('rejectReasonModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openRejectModal(studentId, studentName) {
+        document.getElementById('rejectStudentName').textContent = studentName;
+        document.getElementById('rejectStudentForm').action = "/admin-dashboard/verifications/reject/" + studentId + "/";
+        document.getElementById('rejectionReasonText').value = "College ID photo is blurry, unreadable or cut off. Please re-upload a clear ID.";
+        openModal('rejectReasonModal');
+    }
+
+    function setQuickReason(val) {
+        if (val) {
+            document.getElementById('rejectionReasonText').value = val;
+        }
+    }
+</script>
+{% endblock %}

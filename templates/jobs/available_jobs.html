@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Opportunities | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+    <style>
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            background: var(--surface);
+            color: var(--slate-600);
+            border: 1px solid var(--border);
+            transition: all var(--transition-fast);
+        }
+
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header-title">Discover Student Job Openings</h1>
+                <p class="page-header-subtitle">Explore micro-internships, part-time tasks, campus projects, and freelance gigs.</p>
+            </div>
+            {% if request.user.is_authenticated and request.user.user_type == 'student' %}
+            <div class="page-header-actions">
+                <a href="{% url 'applied_jobs' %}" class="btn btn-secondary">
+                    <span>📋</span> Track My Applications
+                </a>
+            </div>
+            {% endif %}
+        </header>
+
+        <!-- Search & Filter Card -->
+        <section class="search-filter-card">
+            <form method="GET" action="{% url 'available_jobs' %}" id="jobsSearchForm">
+                <div class="search-filter-grid">
+                    
+                    <!-- Search Input -->
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by job title, skills, or keywords..." class="form-input">
+                    </div>
+
+                    <!-- Location Select -->
+                    <div>
+                        <select name="location" class="form-select" onchange="this.form.submit()">
+                            <option value="all">All Locations</option>
+                            {% for loc in distinct_locations %}
+                                <option value="{{ loc }}" {% if selected_location == loc %}selected{% endif %}>{{ loc }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Duration Select -->
+                    <div>
+                        <select name="duration" class="form-select" onchange="this.form.submit()">
+                            <option value="all">All Durations</option>
+                            {% for dur in distinct_durations %}
+                                <option value="{{ dur }}" {% if selected_duration == dur %}selected{% endif %}>{{ dur }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Filter Actions -->
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        {% if search_query or selected_location or selected_duration or selected_skill %}
+                            <a href="{% url 'available_jobs' %}" class="btn btn-secondary" title="Reset Filters">Clear</a>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </form>
+        </section>
+
+        <!-- Results Counter & Date Status Tabs -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <p style="font-size: 14px; font-weight: 600; color: var(--slate-600);">
+                Showing <strong>{{ total_jobs_count }}</strong> opportunity{% if total_jobs_count != 1 %}ies{% endif %} available
+            </p>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_duration %}duration={{ selected_duration }}&{% endif %}date_status=all" class="filter-chip {% if date_status == 'all' or not date_status %}active{% endif %}">
+                    All Listings ({{ total_jobs_count }})
+                </a>
+                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_duration %}duration={{ selected_duration }}&{% endif %}date_status=upcoming" class="filter-chip {% if date_status == 'upcoming' %}active{% endif %}" style="{% if date_status == 'upcoming' %}background: var(--success); border-color: var(--success);{% endif %}">
+                    🟢 Upcoming Dates ({{ upcoming_count }})
+                </a>
+                <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_duration %}duration={{ selected_duration }}&{% endif %}date_status=expired" class="filter-chip {% if date_status == 'expired' %}active{% endif %}" style="{% if date_status == 'expired' %}background: var(--danger); border-color: var(--danger);{% endif %}">
+                    ⚠️ Date Passed ({{ expired_count }})
+                </a>
+            </div>
+        </div>
+
+        <!-- Jobs Grid -->
+        {% if jobs %}
+            <div class="jobs-grid">
+                {% for job in jobs %}
+                    <div class="job-card {% if job.is_expired %}job-expired{% endif %}">
+                        <div>
+                            <div class="job-card-top">
+                                <div class="job-employer-badge">
+                                    <div class="employer-avatar">
+                                        {% if job.customer %}
+                                            {{ job.customer.customer_profile.full_name|default:job.customer.username|first|upper }}
+                                        {% else %}
+                                            E
+                                        {% endif %}
+                                    </div>
+                                    <span>
+                                        {% if job.customer %}
+                                            {{ job.customer.customer_profile.full_name|default:job.customer.username }}
+                                        {% else %}
+                                            Employer
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if job.is_expired %}
+                                    <span class="status-badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 11px;">⚠️ Date Expired</span>
+                                chip{% elif job.is_today %}
+                                    <span class="status-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 11px;">🟢 Today</span>
+                                {% else %}
+                                    <span style="font-size: 11px; font-weight: 700; color: var(--slate-400);">{{ job.created_at|timesince }} ago</span>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="job-card-title">{{ job.job_title }}</h3>
+                            <p class="job-card-desc">{{ job.description|truncatewords:22 }}</p>
+
+                            <div class="job-meta-grid" style="{% if job.is_expired %}background: #fff5f5; border-color: #fed7d7;{% endif %}">
+                                <div class="job-meta-item">
+                                    <span>📍</span>
+                                    <span>{{ job.location }}</span>
+                                </div>
+                                <div class="job-meta-item">
+                                    <span>⏱️</span>
+                                    <span>{{ job.work_duration }}</span>
+                                </div>
+                                <div class="job-meta-item" style="grid-column: 1 / -1;">
+                                    <span>📅</span>
+                                    {% if job.is_expired %}
+                                        <span style="color: #dc2626; font-weight: 600;">
+                                            Work Date: {{ job.work_date|date:"M d, Y" }}
+                                            <span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700;">Date Passed</span>
+                                        </span>
+                                    {% elif job.is_today %}
+                                        <span style="color: #047857; font-weight: 600;">
+                                            Work Date: {{ job.work_date|date:"M d, Y" }}
+                                            <span style="font-size: 10px; background: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700;">Happens Today</span>
+                                        </span>
+                                    {% else %}
+                                        <span>Work Date: {{ job.work_date|date:"M d, Y" }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if job.required_skills %}
+                                <div class="skills-pill-container">
+                                    <span class="skill-tag">🏷️ {{ job.required_skills }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="job-card-footer">
+                            <div>
+                                {% if job.applied_status %}
+                                    {% if job.applied_status == 'Pending' %}
+                                        <span class="status-badge status-pending">Applied &bull; In Review</span>
+                                    {% elif job.applied_status == 'Shortlisted' %}
+                                        <span class="status-badge status-shortlisted">Shortlisted ⭐</span>
+                                    {% elif job.applied_status == 'Accepted' %}
+                                        <span class="status-badge status-accepted">Hired / Accepted ✓</span>
+                                    {% elif job.applied_status == 'Completed' %}
+                                        <span class="status-badge status-completed">Completed 🏆</span>
+                                    {% elif job.applied_status == 'Rejected' %}
+                                        <span class="status-badge status-rejected">Rejected</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">Applied</span>
+                                    {% endif %}
+                                {% elif job.is_expired %}
+                                    <span style="font-size: 12px; color: #dc2626; font-weight: 700;">Applications Closed</span>
+                                {% else %}
+                                    <span style="font-size: 12px; color: var(--success); font-weight: 700;">Open for Applications</span>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                {% if job.applied_status %}
+                                    <a href="{% url 'applied_jobs' %}" class="btn btn-sm btn-outline">View Status</a>
+                                {% elif job.is_expired %}
+                                    <button class="btn btn-sm btn-secondary" disabled style="opacity: 0.65; cursor: not-allowed; background: #e2e8f0; color: #64748b; border: none;" title="The work date for this job has already passed">Date Expired</button>
+                                {% else %}
+                                    <a href="{% url 'apply_job' job.id %}" class="btn btn-sm btn-primary">Apply Now &rarr;</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <span class="empty-state-icon">🔍</span>
+                <h3 class="empty-state-title">No Job Openings Match Your Search</h3>
+                <p class="empty-state-desc">Try loosening your search terms or clearing your location, duration, or date filters to view all listings.</p>
+                <a href="{% url 'available_jobs' %}" class="btn btn-primary">Reset All Filters</a>
+            </div>
+        {% endif %}
+
+    </main>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

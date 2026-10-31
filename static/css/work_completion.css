@@ -1,0 +1,65 @@
+/* Styles for the Work Completion form */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 24px;
+    background: #f7f9fb;
+}
+
+h2 {
+    color: #2b4a6f;
+}
+
+form {
+    background: #ffffff;
+    padding: 18px;
+    border-radius: 6px;
+    max-width: 700px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+label {
+    font-weight: 600;
+}
+
+input[type="text"], input[type="date"], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border: 1px solid #cfd8e3;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    background: #2b6cb0;
+    color: #fff;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button[type="reset"] {
+    background: #9aa8bd;
+    margin-left: 8px;
+}
+
+.form-errors {
+    margin: 12px 0;
+    color: #b00020;
+}
+
+.form-errors ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.field-error {
+    color: #b00020;
+    font-size: 0.95em;
+    margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+    form { padding: 12px; }
+}

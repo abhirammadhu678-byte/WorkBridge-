@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Rating & Review - WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer_portal.css' %}">
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    {% include "components/navbar_customer.html" %}
+
+    <!-- MAIN CONTAINER -->
+    <main class="portal-container" style="max-width: 780px;">
+
+        <!-- FLASH MESSAGES -->
+        {% include "components/alerts.html" %}
+
+        <!-- RATING CARD -->
+        <div class="portal-card" style="padding: 36px;">
+            <div class="portal-card-header" style="border-bottom: 2px solid var(--slate-100); padding-bottom: 20px; margin-bottom: 24px;">
+                <div>
+                    <h1 class="page-header-title" style="font-size: 26px;">⭐ Student Rating & Review</h1>
+                    <p class="page-header-subtitle">
+                        Share constructive feedback to empower verified students and build their professional reputation.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CANDIDATE SUMMARY CARD -->
+            <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 20px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="avatar-circle avatar-circle-lg">
+                        {% if student.full_name %}
+                            {{ student.full_name|slice:":1"|upper }}
+                        {% elif student.user %}
+                            {{ student.user.username|slice:":1"|upper }}
+                        {% else %}
+                            S
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 17px; color: var(--slate-900);">
+                            {% if student.full_name %}
+                                {{ student.full_name }}
+                            {% elif student.user %}
+                                {{ student.user.username }}
+                            {% else %}
+                                Student
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 13px; color: var(--slate-600); margin-top: 2px;">
+                            Job: <strong>{{ job.job_title }}</strong>
+                        </div>
+                        {% if student.college %}
+                            <div style="font-size: 12px; color: var(--slate-400); margin-top: 2px;">
+                                🏛️ {{ student.college }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <span class="status-badge status-completed">✅ Completed</span>
+                </div>
+            </div>
+
+            {% if existing_review %}
+                <div class="alert-item alert-info" style="margin-bottom: 24px;">
+                    <span>ℹ️ You previously reviewed this student with {{ existing_review.rating }}⭐. Submitting below will update your review.</span>
+                </div>
+            {% endif %}
+
+            <!-- RATING REVIEW FORM -->
+            <form method="POST" id="ratingReviewForm" novalidate>
+                {% csrf_token %}
+
+                <!-- Hidden / sync rating input for standard form serialization & JS -->
+                <input type="hidden" id="rating" name="rating" value="{{ existing_review.rating|default:'5' }}">
+
+                <!-- INTERACTIVE STAR RATING SELECTOR -->
+                <div class="star-rating-wrapper">
+                    <label class="form-label" style="font-size: 14px; margin-bottom: 0;">
+                        Select Overall Rating <span class="required-star">*</span>
+                    </label>
+
+                    <div class="stars-interactive">
+                        <button type="button" class="star-btn active" data-value="1" title="1 Star - Poor">★</button>
+                        <button type="button" class="star-btn active" data-value="2" title="2 Stars - Fair">★</button>
+                        <button type="button" class="star-btn active" data-value="3" title="3 Stars - Good">★</button>
+                        <button type="button" class="star-btn active" data-value="4" title="4 Stars - Very Good">★</button>
+                        <button type="button" class="star-btn active" data-value="5" title="5 Stars - Outstanding">★</button>
+                    </div>
+
+                    <div id="rating_label_display" class="rating-label-display">
+                        ⭐⭐⭐⭐⭐ 5 Stars - Outstanding Performance!
+                    </div>
+
+                    <div class="field-error" id="rating-error"></div>
+                </div>
+
+                <!-- REVIEW COMMENT TEXTAREA -->
+                <div class="form-group">
+                    <label class="form-label" for="review_comment">
+                        Detailed Feedback & Testimonial <span class="required-star">*</span>
+                    </label>
+                    <textarea id="review_comment" 
+                              name="review_comment" 
+                              rows="5" 
+                              class="form-textarea"
+                              placeholder="Describe your experience with this student worker. Did they arrive on time, communicate effectively, and deliver quality output?">{{ existing_review.review_comment|default:'' }}</textarea>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <span class="form-helper">Constructive feedback helps students grow and succeed in future roles.</span>
+                        <span id="reviewCharCounter" style="font-size: 12px; color: var(--slate-400);">0 / 1000</span>
+                    </div>
+                    <div class="field-error" id="review-error"></div>
+                </div>
+
+                <!-- FORM ERRORS CONTAINER (JS) -->
+                <div id="form-errors" class="alert-item alert-error" style="display: none; margin-bottom: 20px;"></div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="display: flex; gap: 14px; align-items: center; margin-top: 32px; border-top: 1px solid var(--slate-100); padding-top: 24px;">
+                    <button type="submit" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #2563eb, #4f46e5);">
+                        ⭐ {% if existing_review %}Update Review{% else %}Submit Review & Rating{% endif %}
+                    </button>
+                    <a href="{% url 'customer_dashboard' %}" class="btn btn-secondary btn-lg">Skip / Back to Dashboard</a>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+
+    {% load static %}
+    <script src="{% static 'js/customer_portal.js' %}"></script>
+    <script src="{% static 'js/rating_review.js' %}"></script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+    <script>
+        const revEl = document.getElementById('review_comment');
+        const counterEl = document.getElementById('reviewCharCounter');
+        if (revEl && counterEl) {
+            function updateCount() {
+                counterEl.textContent = `${revEl.value.length} / 1000`;
+            }
+            revEl.addEventListener('input', updateCount);
+            updateCount();
+        }
+    </script>
+</body>
+</html>

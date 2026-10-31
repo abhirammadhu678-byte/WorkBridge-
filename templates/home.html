@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBridge | Connect Talent with Opportunity</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+    <header class="wb-navbar">
+        <div class="wb-navbar-inner">
+            <a href="{% url 'home' %}" class="wb-brand">
+                <span class="wb-brand-logo">WorkBridge<span class="dot">.</span></span>
+            </a>
+            <ul class="wb-nav-menu">
+                <li><a href="{% url 'home' %}" class="wb-nav-link active">Home</a></li>
+                <li><a href="{% url 'login' %}" class="wb-nav-link">Login</a></li>
+                <li><a href="{% url 'student_register' %}" class="wb-nav-link">Join as Student</a></li>
+                <li><a href="{% url 'customer_register' %}" class="wb-nav-link">Join as Customer</a></li>
+            </ul>
+            <div class="wb-nav-actions">
+                <a href="{% url 'login' %}" class="btn btn-outline btn-sm">Sign In</a>
+                <a href="{% url 'student_register' %}" class="btn btn-primary btn-sm">Get Started</a>
+                <button type="button" class="wb-mobile-toggle" id="wbMobileNavToggle" aria-label="Toggle Navigation">
+                    ☰
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Drawer for Home -->
+    <div class="wb-drawer-backdrop" id="wbNavBackdrop"></div>
+    <div class="wb-mobile-drawer" id="wbMobileNavDrawer">
+        <a href="{% url 'home' %}" class="wb-nav-link active">🏠 Home</a>
+        <a href="{% url 'login' %}" class="wb-nav-link">🔐 Login / Sign In</a>
+        <a href="{% url 'student_register' %}" class="wb-nav-link">🎓 Join as Student</a>
+        <a href="{% url 'customer_register' %}" class="wb-nav-link">💼 Join as Customer</a>
+    </div>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <h1>Find work, build trust, and grow your career.</h1>
+                <p>WorkBridge brings students, employers, and freelance opportunities together in one modern platform. Post jobs, apply instantly, and manage the entire hiring journey with confidence.</p>
+                <div class="hero-actions">
+                    <a href="{% url 'student_register' %}" class="btn btn-primary btn-lg">Register as Student</a>
+                    <a href="{% url 'customer_register' %}" class="btn btn-secondary btn-lg">Register as Customer</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline btn-lg">Sign In</a>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <strong>500+</strong>
+                        <span>Active opportunities</span>
+                    </div>
+                    <div class="stat">
+                        <strong>98%</strong>
+                        <span>Verified profiles</span>
+                    </div>
+                    <div class="stat">
+                        <strong>24/7</strong>
+                        <span>Seamless support</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-card">
+                <h3>Why teams choose WorkBridge</h3>
+                <ul>
+                    <li>Easy student and employer onboarding</li>
+                    <li>Reliable job posting and application flow</li>
+                    <li>Professional review and completion tracking</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Built for every step of the hiring journey</h2>
+            <p class="section-subtitle">A simple, trustworthy experience for talent discovery and project delivery.</p>
+            <div class="card-grid">
+                <article class="feature-card">
+                    <h3>For Students</h3>
+                    <p>Create your profile, showcase your skills, and apply to jobs that match your goals.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>For Employers</h3>
+                    <p>Post openings, review applicants, and connect with qualified candidates quickly.</p>
+                </article>
+                <article class="feature-card">
+                    <h3>For Teams</h3>
+                    <p>Track work completion, collect reviews, and build lasting professional relationships.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="highlight">
+                <h2 class="section-title">Start your next opportunity today</h2>
+                <p class="section-subtitle">Join WorkBridge and turn ambition into action.</p>
+                <div class="hero-actions" style="justify-content: center;">
+                    <a href="{% url 'student_register' %}" class="btn btn-primary">Register as Student</a>
+                    <a href="{% url 'customer_register' %}" class="btn btn-secondary">Register as Customer</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary">Sign In</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 WorkBridge. Designed to connect talent with opportunity.</p>
+    </footer>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

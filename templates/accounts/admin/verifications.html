@@ -1,0 +1,317 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Student Verification Queue{% endblock %}
+{% block breadcrumb %}Student Verifications{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">Student Verification Center 🪪</h1>
+        <p class="page-subtitle">Verify student enrollments, inspect uploaded college IDs, and approve or reject access.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'admin_users' %}?role=student" class="btn btn-outline">View All Students Directory</a>
+    </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card">
+    <div class="filter-left">
+        <!-- Status Filter Pills -->
+        <div class="filter-pills">
+            <a href="{% url 'admin_verifications' %}?status=pending{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'pending' %}active{% endif %}">
+                <span>⏳ Pending</span>
+                <span class="pill-count">{{ pending_count }}</span>
+            </a>
+            <a href="{% url 'admin_verifications' %}?status=verified{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'verified' %}active{% endif %}">
+                <span>✅ Verified</span>
+                <span class="pill-count">{{ verified_count }}</span>
+            </a>
+            <a href="{% url 'admin_verifications' %}?status=rejected{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'rejected' %}active{% endif %}">
+                <span>❌ Rejected</span>
+                <span class="pill-count">{{ rejected_count }}</span>
+            </a>
+            <a href="{% url 'admin_verifications' %}?status=missing{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'missing' %}active{% endif %}">
+                <span>⚠️ No ID</span>
+                <span class="pill-count">{{ missing_count }}</span>
+            </a>
+            <a href="{% url 'admin_verifications' %}?status=all{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'all' %}active{% endif %}">
+                <span>All</span>
+                <span class="pill-count">{{ all_count }}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="filter-right">
+        <form method="GET" action="{% url 'admin_verifications' %}" style="display: flex; gap: 8px;">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <div class="search-input-wrap">
+                <span class="search-icon-pos">🔍</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search by name, college, email...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if search_q %}
+                <a href="{% url 'admin_verifications' %}?status={{ status_filter }}" class="btn btn-outline btn-sm">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- STUDENTS VERIFICATION TABLE -->
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="table-card-title">
+            <span>Student Verification Queue</span>
+            <span class="badge badge-student">{{ students|length }} Records</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Student Details</th>
+                    <th>College & Program</th>
+                    <th>Location / District</th>
+                    <th>College ID Document</th>
+                    <th>Current Status</th>
+                    <th>Verification Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-cell-avatar">
+                                {% if student.profile_photo %}
+                                    <img src="{{ student.profile_photo.url }}" alt="{{ student.full_name }}">
+                                {% else %}
+                                    {{ student.full_name|default:student.user.username|slice:":1"|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="user-cell-info">
+                                <span class="user-cell-name">{{ student.full_name|default:student.user.username }}</span>
+                                <span class="user-cell-sub">📧 {{ student.user.email }}</span>
+                                {% if student.mobile %}
+                                    <span class="user-cell-sub">📞 {{ student.mobile }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ student.college|default:"Not specified" }}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">
+                            {{ student.course|default:"Course not set" }}
+                            {% if student.semester %} &bull; <strong>{{ student.semester }}</strong>{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">{{ student.district|default:"Kerala" }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">{{ student.place.name|default:"" }}</div>
+                    </td>
+                    <td>
+                        {% if student.college_id %}
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                    onclick="previewDocument('{{ student.college_id.url }}', '{{ student.full_name|default:student.user.username }} - College ID', '{{ student.college|default:'' }} &bull; {{ student.course|default:'' }}')">
+                                <span>🔍 View ID</span>
+                            </button>
+                        {% else %}
+                            <span class="badge badge-missing">No ID Uploaded</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.is_verified %}
+                            <span class="badge badge-verified">
+                                <span class="status-dot status-dot-green"></span>
+                                Verified
+                            </span>
+                        {% elif student.is_rejected %}
+                            <span class="badge badge-rejected">
+                                <span class="status-dot status-dot-red"></span>
+                                Rejected
+                            </span>
+                        {% elif student.college_id %}
+                            <span class="badge badge-pending">
+                                <span class="status-dot status-dot-amber"></span>
+                                Pending Review
+                            </span>
+                        {% else %}
+                            <span class="badge badge-inactive">
+                                Unverified (No ID)
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            {% if not student.is_verified %}
+                                <a href="{% url 'approve_student_verification' student.id %}" class="btn btn-sm btn-success" title="Approve ID">
+                                    ✓ Approve
+                                </a>
+                            {% endif %}
+                            
+                            {% if not student.is_rejected %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="openRejectModal('{{ student.id }}', '{{ student.full_name|default:student.user.username }}')">
+                                    ✕ Reject
+                                </button>
+                            {% else %}
+                                <a href="{% url 'approve_student_verification' student.id %}" class="btn btn-sm btn-outline-success" title="Re-verify Student">
+                                    Re-Approve
+                                </a>
+                            {% endif %}
+
+                            <button type="button" class="btn btn-sm btn-secondary" 
+                                    onclick="openProfileModal('{{ student.full_name|default:student.user.username|escapejs }}', '{{ student.user.email|escapejs }}', '{{ student.mobile|default:'N/A'|escapejs }}', '{{ student.college|default:'N/A'|escapejs }}', '{{ student.course|default:'N/A'|escapejs }}', '{{ student.semester|default:'N/A'|escapejs }}', '{{ student.skills|default:'None'|escapejs }}', '{{ student.about_me|default:'No bio'|escapejs }}', '{% if student.resume %}{{ student.resume.url }}{% endif %}')"
+                                    title="View Profile Details">
+                                ℹ️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">📂</div>
+                            <div class="empty-title">No Students Found</div>
+                            <div class="empty-subtitle">There are no records matching your selected filter or search keyword.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div class="modal-overlay" id="rejectReasonModal">
+    <div class="modal-box">
+        <form method="POST" id="rejectStudentForm" action="">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Reject Student Verification</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('rejectReasonModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                    Rejecting verification for <strong id="rejectStudentName">Student</strong>. The student will receive a notification with the reason below so they can correct their documents.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Preset Standard Reason</label>
+                    <select class="form-select" onchange="setQuickReason(this.value)">
+                        <option value="">-- Choose standard reason --</option>
+                        <option value="College ID photo is blurry, unreadable or cut off.">College ID is blurry or unreadable</option>
+                        <option value="Uploaded ID card is expired. Please submit current academic year ID.">Expired student ID card</option>
+                        <option value="Student name on profile does not match the College ID.">Name mismatch with ID</option>
+                        <option value="College name specified differs from ID card document.">College name mismatch</option>
+                        <option value="Invalid document type uploaded. Please upload official college ID card.">Invalid document type</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="rejectionReasonText">Custom Reason / Instructions <span style="color: var(--danger);">*</span></label>
+                    <textarea class="form-textarea" id="rejectionReasonText" name="reason" rows="3" required placeholder="Explain why the verification was rejected..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('rejectReasonModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- STUDENT PROFILE VIEW MODAL -->
+<div class="modal-overlay" id="studentProfileModal">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <h3 class="modal-title" id="profModalTitle">Student Profile</h3>
+            <button type="button" class="modal-close-btn" onclick="closeModal('studentProfileModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <div id="profEmail" style="font-size: 14px; color: var(--text-primary); font-weight: 600;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mobile Number</label>
+                    <div id="profMobile" style="font-size: 14px; color: var(--text-primary); font-weight: 600;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">College / University</label>
+                    <div id="profCollege" style="font-size: 14px; color: var(--text-primary); font-weight: 600;"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Course & Semester</label>
+                    <div id="profCourse" style="font-size: 14px; color: var(--text-primary); font-weight: 600;"></div>
+                </div>
+                <div class="form-group form-grid-full">
+                    <label class="form-label">Declared Skills</label>
+                    <div id="profSkills" style="font-size: 14px; color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 8px 12px; border-radius: var(--radius-md);"></div>
+                </div>
+                <div class="form-group form-grid-full">
+                    <label class="form-label">About / Bio</label>
+                    <div id="profAbout" style="font-size: 13.5px; color: var(--text-secondary); background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);"></div>
+                </div>
+                <div class="form-group form-grid-full" id="profResumeGroup">
+                    <label class="form-label">Uploaded Resume</label>
+                    <a id="profResumeLink" href="#" target="_blank" class="btn btn-sm btn-outline">📄 Download / View Resume ↗</a>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('studentProfileModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openRejectModal(studentId, studentName) {
+        document.getElementById('rejectStudentName').textContent = studentName;
+        document.getElementById('rejectStudentForm').action = "/admin-dashboard/verifications/reject/" + studentId + "/";
+        document.getElementById('rejectionReasonText').value = "College ID photo is blurry, unreadable or cut off. Please re-upload a clear ID.";
+        openModal('rejectReasonModal');
+    }
+
+    function setQuickReason(val) {
+        if (val) {
+            document.getElementById('rejectionReasonText').value = val;
+        }
+    }
+
+    function openProfileModal(name, email, mobile, college, course, sem, skills, about, resumeUrl) {
+        document.getElementById('profModalTitle').textContent = name + ' - Profile Overview';
+        document.getElementById('profEmail').textContent = email;
+        document.getElementById('profMobile').textContent = mobile;
+        document.getElementById('profCollege').textContent = college;
+        document.getElementById('profCourse').textContent = course + (sem ? ' (' + sem + ')' : '');
+        document.getElementById('profSkills').textContent = skills || 'None specified';
+        document.getElementById('profAbout').textContent = about || 'No biography written.';
+
+        const resumeGroup = document.getElementById('profResumeGroup');
+        const resumeLink = document.getElementById('profResumeLink');
+        if (resumeUrl) {
+            resumeGroup.style.display = 'block';
+            resumeLink.href = resumeUrl;
+        } else {
+            resumeGroup.style.display = 'none';
+        }
+
+        openModal('studentProfileModal');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for {{ job.job_title }} | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/apply_job.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="page-container">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="{% url 'student_dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'available_jobs' %}">Available Jobs</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">Apply</span>
+        </nav>
+
+        <div class="apply-layout">
+            <!-- Left Column: Job Details Summary -->
+            <aside class="custom-card job-detail-card">
+                <div class="job-header">
+                    <span class="job-tag">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        Job Opening #{{ job.id }}
+                    </span>
+                    <h1 class="job-title">{{ job.job_title }}</h1>
+                    <div class="job-meta-author">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span>Posted by <strong>{{ job.customer.customer_profile.full_name|default:job.customer.username }}</strong></span>
+                    </div>
+                </div>
+
+                <div class="job-content">
+                    <!-- Key Spec Grid -->
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <div class="meta-icon">📍</div>
+                            <div>
+                                <div class="meta-label">Location</div>
+                                <div class="meta-value">{{ job.location|default:"Not specified" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="meta-item">
+                            <div class="meta-icon">⏱️</div>
+                            <div>
+                                <div class="meta-label">Work Duration</div>
+                                <div class="meta-value">{{ job.work_duration|default:"Flexible" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="meta-item">
+                            <div class="meta-icon">📅</div>
+                            <div>
+                                <div class="meta-label">Work Date</div>
+                                <div class="meta-value" style="{% if job.is_expired %}color: #dc2626; font-weight: 700;{% elif job.is_today %}color: #047857; font-weight: 700;{% endif %}">
+                                    {{ job.work_date|date:"M d, Y"|default:"As scheduled" }}
+                                    {% if job.is_expired %}
+                                        <span style="font-size: 11px; background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">Date Passed</span>
+                                    {% elif job.is_today %}
+                                        <span style="font-size: 11px; background: #d1fae5; color: #065f46; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">Today</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="meta-item">
+                            <div class="meta-icon">💼</div>
+                            <div>
+                                <div class="meta-label">Status</div>
+                                {% if job.is_expired %}
+                                    <div class="meta-value" style="color: #dc2626; font-weight: 700;">Date Passed / Closed</div>
+                                {% elif job.is_today %}
+                                    <div class="meta-value" style="color: #047857; font-weight: 700;">🟢 Happens Today</div>
+                                {% else %}
+                                    <div class="meta-value" style="color: var(--success);">Active Opening</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Description -->
+                    <div>
+                        <div class="section-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Job Description
+                        </div>
+                        <div class="job-description-box">
+                            {{ job.description|default:"No specific description provided." }}
+                        </div>
+                    </div>
+
+                    <!-- Required Skills -->
+                    {% if job.required_skills %}
+                    <div>
+                        <div class="section-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                            Required Skills
+                        </div>
+                        <div class="skills-wrapper" id="skillsContainer">
+                            <!-- Populated dynamically via JS or displayed cleanly -->
+                            <span class="skill-pill">{{ job.required_skills }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Pro Tips Card -->
+                    <div class="tips-card">
+                        <div class="tips-icon">💡</div>
+                        <div class="tips-content">
+                            <h4>Application Tip</h4>
+                            <p>Tailor your cover message to highlight relevant experience and specific availability for faster response times.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column: Interactive Application Form -->
+            <section class="custom-card apply-form-card">
+                <div class="form-header">
+                    <h2>Submit Your Application</h2>
+                    <p>Provide your pitch and availability so the employer can assess your fit.</p>
+                </div>
+
+                {% if job.is_expired %}
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.5;">
+                        <strong>⚠️ Applications Closed:</strong> The work date for this job ({{ job.work_date|date:"M d, Y" }}) has already passed. You cannot submit new applications for this opening.
+                    </div>
+                {% endif %}
+
+                <!-- Logged in Applicant Badge -->
+                <div class="applicant-badge">
+                    <div class="applicant-info">
+                        <div class="applicant-avatar">
+                            {{ request.user.username|first|upper }}
+                        </div>
+                        <div class="applicant-details">
+                            <div class="name">{{ request.user.student_profile.full_name|default:request.user.username }}</div>
+                            <div class="role">Verified Student Applicant</div>
+                        </div>
+                    </div>
+                    {% if job.is_expired %}
+                        <span class="status-badge" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">Date Expired</span>
+                    {% else %}
+                        <span class="status-badge">Ready to Apply</span>
+                    {% endif %}
+                </div>
+
+                <!-- Server Errors Alert -->
+                {% if form.errors %}
+                <div class="server-errors" role="alert">
+                    <strong>Please fix the following issues:</strong>
+                    <ul>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <form method="POST" id="applyJobForm" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Cover Message Field -->
+                    <div class="form-group">
+                        <label for="cover_message" class="form-label">
+                            <span>Cover Message / Pitch <span class="required-mark">*</span></span>
+                            <span class="label-hint">Explain your interest & experience</span>
+                        </label>
+                        <div class="input-container">
+                            <textarea 
+                                name="cover_message" 
+                                id="cover_message" 
+                                class="form-input form-textarea {% if form.cover_message.errors %}is-invalid{% endif %}" 
+                                rows="5"
+                                placeholder="Explain why you are a great fit for this role, any previous experience or skills, and what makes you reliable...">{{ form.cover_message.value|default:'' }}</textarea>
+                        </div>
+                        <div class="counter-container">
+                            <span class="validation-message" id="coverMessageError">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                <span id="coverErrorText">Please enter a cover message (minimum 15 characters).</span>
+                            </span>
+                            <span class="char-counter" id="charCounter">0 / 1000 characters</span>
+                        </div>
+                    </div>
+
+                    <!-- Availability Field -->
+                    <div class="form-group">
+                        <label for="availability" class="form-label">
+                            <span>Your Availability <span class="required-mark">*</span></span>
+                            <span class="label-hint">When can you work?</span>
+                        </label>
+                        <div class="input-container">
+                            <input 
+                                type="text" 
+                                name="availability" 
+                                id="availability" 
+                                class="form-input {% if form.availability.errors %}is-invalid{% endif %}" 
+                                placeholder="e.g. Immediately, Weekends Only, Full Time, 4 PM - 8 PM"
+                                value="{{ form.availability.value|default:'' }}">
+                        </div>
+
+                        <!-- Quick-Select Chips -->
+                        <div class="quick-tags-container">
+                            <span class="quick-tags-title">Quick Select:</span>
+                            <div class="quick-tags-list">
+                                <button type="button" class="quick-tag-chip" data-val="Immediately">Immediately</button>
+                                <button type="button" class="quick-tag-chip" data-val="Weekends Only">Weekends Only</button>
+                                <button type="button" class="quick-tag-chip" data-val="Weekdays (Evenings)">Weekdays (Evenings)</button>
+                                <button type="button" class="quick-tag-chip" data-val="Full-Time">Full-Time</button>
+                                <button type="button" class="quick-tag-chip" data-val="Part-Time">Part-Time</button>
+                                <button type="button" class="quick-tag-chip" data-val="Flexible Schedule">Flexible Schedule</button>
+                            </div>
+                        </div>
+
+                        <div class="validation-message" id="availabilityError">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span id="availabilityErrorText">Please specify your availability.</span>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Agreement Checkbox -->
+                    <div class="checkbox-group">
+                        <label class="checkbox-label" for="confirmAgreement">
+                            <input type="checkbox" id="confirmAgreement" required checked>
+                            <span>I confirm that the information provided is true and I am available to perform the duties outlined for this job.</span>
+                        </label>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit" id="submitBtn" {% if job.is_expired %}disabled style="opacity: 0.6; cursor: not-allowed; background: #94a3b8;" title="The work date for this job has already passed"{% endif %}>
+                            {% if not job.is_expired %}
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="submitIcon">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            {% endif %}
+                            <span id="submitText">{% if job.is_expired %}Applications Closed (Date Passed){% else %}Submit Application{% endif %}</span>
+                        </button>
+                        <a href="{% url 'available_jobs' %}" class="btn-cancel">
+                            Back to Available Jobs
+                        </a>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- Client-side Validation & Dynamic Interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Form & Element references
+            const form = document.getElementById('applyJobForm');
+            const coverInput = document.getElementById('cover_message');
+            const availabilityInput = document.getElementById('availability');
+            const coverError = document.getElementById('coverMessageError');
+            const coverErrorText = document.getElementById('coverErrorText');
+            const availabilityError = document.getElementById('availabilityError');
+            const availabilityErrorText = document.getElementById('availabilityErrorText');
+            const charCounter = document.getElementById('charCounter');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitIcon = document.getElementById('submitIcon');
+            const quickChips = document.querySelectorAll('.quick-tag-chip');
+            const agreementCheckbox = document.getElementById('confirmAgreement');
+
+            // Format Required Skills into chips if comma-separated
+            const skillsContainer = document.getElementById('skillsContainer');
+            if (skillsContainer) {
+                const rawSkills = "{{ job.required_skills|escapejs }}".trim();
+                if (rawSkills && rawSkills.includes(',')) {
+                    skillsContainer.innerHTML = '';
+                    rawSkills.split(',').forEach(function(skill) {
+                        const trimmed = skill.trim();
+                        if (trimmed) {
+                            const pill = document.createElement('span');
+                            pill.className = 'skill-pill';
+                            pill.textContent = trimmed;
+                            skillsContainer.appendChild(pill);
+                        }
+                    });
+                }
+            }
+
+            // Real-time character counter & validation for cover message
+            function updateCoverValidation(isBlurred = false) {
+                const val = coverInput.value.trim();
+                const length = val.length;
+                charCounter.textContent = `${length} / 1000 characters`;
+
+                if (length === 0) {
+                    charCounter.className = 'char-counter';
+                    if (isBlurred) {
+                        coverInput.classList.add('is-invalid');
+                        coverInput.classList.remove('is-valid');
+                        coverErrorText.textContent = 'Please enter a cover message explaining your interest.';
+                        coverError.classList.add('show');
+                        return false;
+                    } else {
+                        coverInput.classList.remove('is-invalid', 'is-valid');
+                        coverError.classList.remove('show');
+                        return false;
+                    }
+                } else if (length < 15) {
+                    charCounter.className = 'char-counter warning';
+                    if (isBlurred) {
+                        coverInput.classList.add('is-invalid');
+                        coverInput.classList.remove('is-valid');
+                        coverErrorText.textContent = `Cover message is too short (${length}/15 characters minimum).`;
+                        coverError.classList.add('show');
+                        return false;
+                    } else {
+                        coverError.classList.remove('show');
+                        return false;
+                    }
+                } else if (length > 1000) {
+                    charCounter.className = 'char-counter error';
+                    coverInput.classList.add('is-invalid');
+                    coverInput.classList.remove('is-valid');
+                    coverErrorText.textContent = 'Cover message cannot exceed 1000 characters.';
+                    coverError.classList.add('show');
+                    return false;
+                } else {
+                    charCounter.className = 'char-counter valid';
+                    coverInput.classList.remove('is-invalid');
+                    coverInput.classList.add('is-valid');
+                    coverError.classList.remove('show');
+                    return true;
+                }
+            }
+
+            // Real-time validation for availability
+            function updateAvailabilityValidation(isBlurred = false) {
+                const val = availabilityInput.value.trim();
+                if (!val) {
+                    if (isBlurred) {
+                        availabilityInput.classList.add('is-invalid');
+                        availabilityInput.classList.remove('is-valid');
+                        availabilityErrorText.textContent = 'Please specify your availability.';
+                        availabilityError.classList.add('show');
+                        return false;
+                    } else {
+                        availabilityInput.classList.remove('is-invalid', 'is-valid');
+                        availabilityError.classList.remove('show');
+                        return false;
+                    }
+                } else if (val.length < 2) {
+                    if (isBlurred) {
+                        availabilityInput.classList.add('is-invalid');
+                        availabilityInput.classList.remove('is-valid');
+                        availabilityErrorText.textContent = 'Please enter a valid availability description.';
+                        availabilityError.classList.add('show');
+                        return false;
+                    }
+                    return false;
+                } else {
+                    availabilityInput.classList.remove('is-invalid');
+                    availabilityInput.classList.add('is-valid');
+                    availabilityError.classList.remove('show');
+                    return true;
+                }
+            }
+
+            // Event Listeners for Live Feedback
+            coverInput.addEventListener('input', function () {
+                updateCoverValidation(false);
+            });
+
+            coverInput.addEventListener('blur', function () {
+                updateCoverValidation(true);
+            });
+
+            availabilityInput.addEventListener('input', function () {
+                updateAvailabilityValidation(false);
+                syncChipsWithInput(availabilityInput.value);
+            });
+
+            availabilityInput.addEventListener('blur', function () {
+                updateAvailabilityValidation(true);
+            });
+
+            // Quick select chip interaction
+            quickChips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    const tagVal = this.getAttribute('data-val');
+                    availabilityInput.value = tagVal;
+                    quickChips.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    updateAvailabilityValidation(true);
+                    availabilityInput.focus();
+                });
+            });
+
+            function syncChipsWithInput(currentVal) {
+                quickChips.forEach(function (chip) {
+                    if (chip.getAttribute('data-val').toLowerCase() === currentVal.trim().toLowerCase()) {
+                        chip.classList.add('active');
+                    } else {
+                        chip.classList.remove('active');
+                    }
+                });
+            }
+
+            // Initialize counter on load
+            updateCoverValidation(false);
+            if (availabilityInput.value) {
+                syncChipsWithInput(availabilityInput.value);
+            }
+
+            // Form Submit Interception & Validation
+            form.addEventListener('submit', function (event) {
+                const isCoverValid = updateCoverValidation(true);
+                const isAvailabilityValid = updateAvailabilityValidation(true);
+
+                let isFormValid = isCoverValid && isAvailabilityValid;
+
+                if (agreementCheckbox && !agreementCheckbox.checked) {
+                    alert('Please check the confirmation box before submitting your application.');
+                    isFormValid = false;
+                }
+
+                if (!isFormValid) {
+                    event.preventDefault();
+
+                    // Scroll and focus on the first invalid element
+                    if (!isCoverValid) {
+                        coverInput.focus();
+                    } else if (!isAvailabilityValid) {
+                        availabilityInput.focus();
+                    }
+                    return false;
+                }
+
+                // Show submitting state
+                submitBtn.disabled = true;
+                submitText.textContent = 'Submitting Application...';
+                if (submitIcon) {
+                    submitIcon.outerHTML = '<span class="spinner"></span>';
+                }
+            });
+        });
+    </script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

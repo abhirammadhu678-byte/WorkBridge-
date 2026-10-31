@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Applications | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+    <style>
+        .filter-tabs-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-tab {
+            padding: 9px 18px;
+            border-radius: var(--radius-full);
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            background: var(--surface);
+            color: var(--slate-600);
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: all var(--transition-fast);
+        }
+
+        .filter-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .filter-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+        }
+
+        .tab-counter {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 2px 7px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .filter-tab.active .tab-counter {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .app-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .app-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+        }
+
+        .app-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .app-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .app-job-title {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 4px;
+        }
+
+        .app-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 13.5px;
+            color: var(--slate-600);
+            margin-bottom: 16px;
+        }
+
+        .app-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .app-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            font-size: 13.5px;
+            margin-bottom: 14px;
+        }
+
+        .review-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            margin-top: 14px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .review-stars {
+            color: #d97706;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        @media (max-width: 680px) {
+            .app-details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <header class="page-header">
+            <div>
+                <h1 class="page-header-title">My Job Applications</h1>
+                <p class="page-header-subtitle">Track real-time hiring decisions, shortlist statuses, and employer performance reviews.</p>
+            </div>
+            <div class="page-header-actions">
+                <a href="{% url 'available_jobs' %}" class="btn btn-primary">
+                    <span>🔍</span> Browse More Jobs
+                </a>
+            </div>
+        </header>
+
+        <!-- Status Filter Tabs -->
+        <div class="filter-tabs-container">
+            <a href="?status=all" class="filter-tab {% if status_filter == 'all' or not status_filter %}active{% endif %}">
+                All Applications <span class="tab-counter">{{ total_count }}</span>
+            </a>
+            <a href="?status=Pending" class="filter-tab {% if status_filter == 'Pending' %}active{% endif %}">
+                ⏳ In Review <span class="tab-counter">{{ pending_count }}</span>
+            </a>
+            <a href="?status=Shortlisted" class="filter-tab {% if status_filter == 'Shortlisted' %}active{% endif %}">
+                ⭐ Shortlisted <span class="tab-counter">{{ shortlisted_count }}</span>
+            </a>
+            <a href="?status=Accepted" class="filter-tab {% if status_filter == 'Accepted' %}active{% endif %}">
+                🎯 Hired / Accepted <span class="tab-counter">{{ accepted_count }}</span>
+            </a>
+            <a href="?status=Completed" class="filter-tab {% if status_filter == 'Completed' %}active{% endif %}">
+                🏆 Completed <span class="tab-counter">{{ completed_count }}</span>
+            </a>
+            <a href="?status=Rejected" class="filter-tab {% if status_filter == 'Rejected' %}active{% endif %}">
+                ✕ Rejected <span class="tab-counter">{{ rejected_count }}</span>
+            </a>
+        </div>
+
+        <!-- Application Cards List -->
+        {% if applications_with_reviews %}
+            <div class="app-list">
+                {% for item in applications_with_reviews %}
+                    {% with app=item.application review=item.review %}
+                        <div class="app-card" style="border-left: 5px solid {% if app.status == 'Accepted' %}var(--success){% elif app.status == 'Shortlisted' %}var(--primary){% elif app.status == 'Completed' %}var(--purple){% elif app.status == 'Rejected' %}var(--danger){% else %}var(--warning){% endif %};">
+                            
+                            <div class="app-card-header">
+                                <div>
+                                    <h2 class="app-job-title">{{ app.job.job_title }}</h2>
+                                    <p style="font-size: 13.5px; color: var(--slate-500);">
+                                        Posted by <strong>{% if app.job.customer %}{{ app.job.customer.customer_profile.full_name|default:app.job.customer.username }}{% else %}Employer{% endif %}</strong>
+                                    </p>
+                                </div>
+
+                                <div>
+                                    {% if app.status == 'Pending' %}
+                                        <span class="status-badge status-pending">In Review &bull; Pending</span>
+                                    {% elif app.status == 'Shortlisted' %}
+                                        <span class="status-badge status-shortlisted">Shortlisted by Employer ⭐</span>
+                                    {% elif app.status == 'Accepted' %}
+                                        <span class="status-badge status-accepted">Accepted / Hired ✓</span>
+                                    {% elif app.status == 'Completed' %}
+                                        <span class="status-badge status-completed">Work Completed 🏆</span>
+                                    {% elif app.status == 'Rejected' %}
+                                        <span class="status-badge status-rejected">Application Closed / Rejected</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">{{ app.status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="app-meta-row">
+                                <div class="app-meta-item">
+                                    <span>📍</span> {{ app.job.location }}
+                                </div>
+                                <div class="app-meta-item">
+                                    <span>⏱️</span> {{ app.job.work_duration }}
+                                </div>
+                                <div class="app-meta-item">
+                                    <span>📅</span> Work Date: <strong>{{ app.job.work_date|date:"M d, Y" }}</strong>
+                                </div>
+                                <div class="app-meta-item">
+                                    <span>🕒</span> Applied: {{ app.applied_at|date:"M d, Y - h:i A" }}
+                                </div>
+                            </div>
+
+                            <div class="app-details-grid">
+                                <div>
+                                    <strong style="color: var(--slate-700); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;">Your Cover Message:</strong>
+                                    <p style="color: var(--slate-600); line-height: 1.45;">"{{ app.cover_message }}"</p>
+                                </div>
+                                <div>
+                                    <strong style="color: var(--slate-700); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;">Stated Availability:</strong>
+                                    <p style="color: var(--slate-800); font-weight: 600;">{{ app.availability }}</p>
+                                </div>
+                            </div>
+
+                            <!-- If Completed, show Employer Review & Rating -->
+                            {% if review %}
+                                <div class="review-box">
+                                    <div class="review-header">
+                                        <span style="font-weight: 700; color: #92400e; font-size: 13.5px;">🌟 Employer Feedback & Rating</span>
+                                        <span class="review-stars">{{ review.rating }} / 5 ⭐</span>
+                                    </div>
+                                    <p style="font-size: 13.5px; color: #78350f; font-style: italic; margin-top: 4px;">"{{ review.review_comment }}"</p>
+                                    <span style="font-size: 11px; color: #b45309; display: block; margin-top: 6px;">Reviewed on {{ review.created_at|date:"M d, Y" }}</span>
+                                </div>
+                            {% elif app.status == 'Accepted' %}
+                                <div style="background: var(--success-light); border: 1px solid var(--success-border); border-radius: var(--radius-md); padding: 14px 18px; font-size: 13.5px; color: var(--success-text);">
+                                    🎉 <strong>Congratulations!</strong> You have been selected for this gig. Please coordinate with the employer to complete your tasks. When finished, the employer will confirm completion and leave a review.
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <span class="empty-state-icon">📋</span>
+                <h3 class="empty-state-title">No Applications Found</h3>
+                <p class="empty-state-desc">
+                    {% if status_filter and status_filter != 'all' %}
+                        No applications matching the "{{ status_filter }}" filter.
+                    {% else %}
+                        You have not applied for any jobs yet. Browse available listings and start applying today!
+                    {% endif %}
+                </p>
+                <a href="{% url 'available_jobs' %}" class="btn btn-primary">Find Job Openings</a>
+            </div>
+        {% endif %}
+
+    </main>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

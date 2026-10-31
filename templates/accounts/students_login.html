@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #f5f3ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-2xl);
+            padding: 36px 32px;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .auth-brand {
+            font-family: var(--font-heading);
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 8px;
+            text-decoration: none;
+        }
+
+        .auth-brand .dot {
+            color: var(--primary);
+        }
+
+        .auth-title {
+            font-family: var(--font-heading);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--slate-900);
+            margin-bottom: 4px;
+        }
+
+        .auth-subtitle {
+            font-size: 13.5px;
+            color: var(--slate-500);
+        }
+
+        .auth-footer {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--slate-100);
+            text-align: center;
+            font-size: 13.5px;
+            color: var(--slate-600);
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            
+            <div class="auth-header">
+                <a href="{% url 'home' %}" class="auth-brand">
+                    WorkBridge<span class="dot">.</span>
+                </a>
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-subtitle">Sign in to access your student, customer, or staff portal</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% include "components/alerts.html" %}
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="Enter your username" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+                    </div>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px; font-size: 15px;">
+                    Sign In to Portal
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p style="margin-bottom: 8px;">Don't have an account yet?</p>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <a href="{% url 'student_register' %}" class="btn btn-sm btn-outline">Join as Student</a>
+                    <a href="{% url 'customer_register' %}" class="btn btn-sm btn-secondary">Join as Customer</a>
+                </div>
+                <div style="margin-top: 16px;">
+                    <a href="{% url 'home' %}" style="color: var(--slate-400); font-size: 12.5px; font-weight: 500;">&larr; Back to Home</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

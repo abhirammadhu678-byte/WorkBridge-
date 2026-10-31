@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Application - {{ application.job.job_title }} - WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer_portal.css' %}">
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    {% include "components/navbar_customer.html" %}
+
+    <!-- MAIN CONTAINER -->
+    <main class="portal-container" style="max-width: 900px;">
+
+        <!-- BREADCRUMB -->
+        <div style="margin-bottom: 20px;">
+            <a href="{% url 'applicant_selection' application.id %}" class="btn btn-sm btn-outline">
+                ← Back to Applicant Evaluation
+            </a>
+        </div>
+
+        <!-- FLASH MESSAGES -->
+        {% include "components/alerts.html" %}
+
+        {% if application %}
+            <div class="portal-card" style="padding: 36px;">
+
+                <!-- HEADER -->
+                <div class="portal-card-header" style="border-bottom: 2px solid var(--slate-100); padding-bottom: 20px; margin-bottom: 28px;">
+                    <div>
+                        <h1 class="page-header-title" style="font-size: 26px;">
+                            Application for {{ application.job.job_title }}
+                        </h1>
+                        <p class="page-header-subtitle">
+                            Candidate: <strong>{{ application.student.student_profile.full_name|default:application.student.username }}</strong>
+                            • Applied {{ application.applied_at|date:"M d, Y" }}
+                        </p>
+                    </div>
+
+                    <div>
+                        {% if application.status == 'Pending' %}
+                            <span class="status-badge status-pending">Pending</span>
+                        {% elif application.status == 'Shortlisted' %}
+                            <span class="status-badge status-shortlisted">Shortlisted</span>
+                        {% elif application.status == 'Accepted' %}
+                            <span class="status-badge status-accepted">Accepted</span>
+                        {% elif application.status == 'Completed' %}
+                            <span class="status-badge status-completed">Completed</span>
+                        {% elif application.status == 'Rejected' %}
+                            <span class="status-badge status-rejected">Rejected</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- JOB SUMMARY -->
+                <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
+                    <h3 style="font-size: 15px; font-weight: 700; color: var(--slate-900); margin-bottom: 8px;">💼 Job Specifications</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 13px;">
+                        <div><strong style="color: var(--slate-500);">Location:</strong> {{ application.job.location }}</div>
+                        <div><strong style="color: var(--slate-500);">Work Date:</strong> {{ application.job.work_date|date:"M d, Y" }}</div>
+                        <div><strong style="color: var(--slate-500);">Duration:</strong> {{ application.job.work_duration }}</div>
+                    </div>
+                </div>
+
+                <!-- COVER MESSAGE -->
+                <div style="margin-bottom: 24px;">
+                    <label class="form-label">Applicant's Cover Message</label>
+                    <div style="background: #ffffff; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 18px; border-radius: var(--radius-md); font-size: 14px; line-height: 1.6; color: var(--slate-800); white-space: pre-line;">
+                        {{ application.cover_message }}
+                    </div>
+                </div>
+
+                <!-- AVAILABILITY & DETAILS -->
+                <div class="info-grid" style="margin-bottom: 28px;">
+                    <div class="info-item">
+                        <label>Availability</label>
+                        <span>🕒 {{ application.availability }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Candidate Email</label>
+                        <span>✉️ {{ application.student.email }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Contact Phone</label>
+                        <span>📞 {{ application.student.student_profile.mobile|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>College / Course</label>
+                        <span>🏛️ {{ application.student.student_profile.college|default:"-" }}</span>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="border-top: 1px solid var(--slate-100); padding-top: 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    {% if application.status == "Pending" %}
+                        <form method="POST" action="{% url 'manage_application' application.id 'shortlist' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-info">🎯 Shortlist Candidate</button>
+                        </form>
+                        <form method="POST" action="{% url 'manage_application' application.id 'accept' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">🤝 Accept & Hire</button>
+                        </form>
+                        <form method="POST" action="{% url 'manage_application' application.id 'reject' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Reject this application?');">❌ Reject</button>
+                        </form>
+                    {% elif application.status == "Shortlisted" %}
+                        <form method="POST" action="{% url 'manage_application' application.id 'accept' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">🤝 Accept & Hire</button>
+                        </form>
+                        <form method="POST" action="{% url 'manage_application' application.id 'reject' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Reject this application?');">❌ Reject</button>
+                        </form>
+                    {% elif application.status == "Accepted" %}
+                        <a href="{% url 'work_completion' application.id %}" class="btn btn-success">
+                            📝 Mark Work Completed →
+                        </a>
+                    {% elif application.status == "Completed" %}
+                        <a href="{% url 'rating_review' application.id %}" class="btn btn-primary">
+                            ⭐ Give Rating & Review →
+                        </a>
+                    {% endif %}
+
+                    <a href="{% url 'applicant_selection' application.id %}" class="btn btn-outline" style="margin-left: auto;">
+                        Full Evaluation View
+                    </a>
+                </div>
+
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <span class="empty-state-icon">❌</span>
+                <h2 class="empty-state-title">Application Not Found</h2>
+                <p class="empty-state-desc">The requested application could not be found or has been removed.</p>
+                <a href="{% url 'my_jobs' %}" class="btn btn-primary" style="margin-top: 12px;">Back to My Jobs</a>
+            </div>
+        {% endif %}
+
+    </main>
+
+    {% load static %}
+    <script src="{% static 'js/customer_portal.js' %}"></script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

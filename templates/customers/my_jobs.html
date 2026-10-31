@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Posted Jobs - WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer_portal.css' %}">
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    {% include "components/navbar_customer.html" %}
+
+    <!-- MAIN CONTAINER -->
+    <main class="portal-container">
+
+        <!-- FLASH MESSAGES -->
+        {% include "components/alerts.html" %}
+
+        <!-- PAGE HEADER -->
+        <section class="page-header">
+            <div>
+                <h1 class="page-header-title">My Posted Jobs 📋</h1>
+                <p class="page-header-subtitle">Manage your posted listings, monitor applicant engagement, and update job specifications.</p>
+            </div>
+            <div class="page-header-actions">
+                <a href="{% url 'job_post' %}" class="btn btn-primary">+ Post a New Job</a>
+            </div>
+        </section>
+
+        {% if jobs %}
+            <!-- SEARCH AND FILTER BAR -->
+            <div class="search-filter-card">
+                <div class="search-filter-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <input type="text" 
+                               id="jobSearchInput" 
+                               class="form-input" 
+                               placeholder="🔍 Search jobs by title, skills, or location...">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select id="jobDurationFilter" class="form-select">
+                            <option value="">All Durations</option>
+                            <option value="2 Hours">2 Hours</option>
+                            <option value="4 Hours">4 Hours</option>
+                            <option value="Half Day">Half Day</option>
+                            <option value="Full Day">Full Day</option>
+                            <option value="2 Days">2 Days</option>
+                            <option value="1 Week">1 Week</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div style="font-size: 13px; color: var(--slate-500); font-weight: 600;">
+                        Showing {{ total_jobs_count }} Job{{ total_jobs_count|pluralize }}
+                    </div>
+
+                    <div>
+                        <a href="{% url 'job_post' %}" class="btn btn-sm btn-outline">+ Add Listing</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JOBS GRID -->
+            <div class="jobs-grid">
+                {% for job in jobs %}
+                    <div class="job-card job-item-card" 
+                         data-title="{{ job.job_title|lower }}" 
+                         data-location="{{ job.location|lower }}" 
+                         data-skills="{{ job.required_skills|lower }}"
+                         data-duration="{{ job.work_duration }}">
+                        
+                        <div>
+                            <!-- HEADER -->
+                            <div class="job-card-top">
+                                <div>
+                                    <h2 class="job-card-title">{{ job.job_title }}</h2>
+                                    <div style="font-size: 12.5px; color: var(--slate-400); margin-top: 2px;">
+                                        Posted {{ job.created_at|timesince }} ago
+                                    </div>
+                                </div>
+                                <span class="skill-tag" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">
+                                    {{ job.work_duration }}
+                                </span>
+                            </div>
+
+                            <!-- META ITEMS -->
+                            <div class="job-meta-grid">
+                                <span class="job-meta-item">
+                                    <span>📍</span> {{ job.location }}
+                                </span>
+                                <span class="job-meta-item">
+                                    <span>📅</span> Work Date: <strong>{{ job.work_date|date:"M d, Y" }}</strong>
+                                </span>
+                            </div>
+
+                            <!-- SKILLS BADGES -->
+                            {% if job.required_skills %}
+                                <div class="skills-pill-container">
+                                    {% for skill in job.required_skills.split %}
+                                        <span class="skill-tag">{{ skill|cut:"," }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- DESCRIPTION -->
+                            <p class="job-card-desc">
+                                {{ job.description|truncatewords:24 }}
+                            </p>
+
+                            <!-- APPLICANT STATUS BREAKDOWN -->
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+                                <a href="{% url 'applicants_for_job' job.id %}" class="status-badge status-shortlisted" style="font-size: 11.5px; text-decoration: none;">
+                                    👥 {{ job.total_applicants }} Total Applicant{{ job.total_applicants|pluralize }}
+                                </a>
+
+                                {% if job.pending_count > 0 %}
+                                    <span class="status-badge status-pending" style="font-size: 11px;">
+                                        ⏳ {{ job.pending_count }} Pending
+                                    </span>
+                                {% endif %}
+
+                                {% if job.shortlisted_count > 0 %}
+                                    <span class="status-badge status-shortlisted" style="font-size: 11px;">
+                                        🎯 {{ job.shortlisted_count }} Shortlisted
+                                    </span>
+                                {% endif %}
+
+                                {% if job.accepted_count > 0 %}
+                                    <span class="status-badge status-accepted" style="font-size: 11px;">
+                                        🤝 {{ job.accepted_count }} Accepted
+                                    </span>
+                                {% endif %}
+
+                                {% if job.completed_count > 0 %}
+                                    <span class="status-badge status-completed" style="font-size: 11px;">
+                                        ✅ {{ job.completed_count }} Completed
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- FOOTER ACTIONS -->
+                        <div class="job-card-footer">
+                            <a href="{% url 'applicants_for_job' job.id %}" class="btn btn-primary btn-sm">
+                                👥 View Applicants ({{ job.total_applicants }})
+                            </a>
+
+                            <div style="display: flex; gap: 8px;">
+                                <a href="{% url 'job_edit' job.id %}" class="btn btn-secondary btn-sm" title="Edit this job">
+                                    ✏️ Edit
+                                </a>
+                                <a href="{% url 'job_delete' job.id %}" 
+                                   class="btn btn-danger btn-sm" 
+                                   onclick="return confirm('Are you sure you want to permanently delete the job \'{{ job.job_title|escapejs }}\'? All associated applications will also be removed.');"
+                                   title="Delete this job">
+                                    🗑️ Delete
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- FILTER EMPTY STATE (JS CONTROLLED) -->
+            <div id="filterEmptyState" class="empty-state-box" style="display: none; margin-top: 24px;">
+                <span class="empty-state-icon">🔍</span>
+                <h3 class="empty-state-title">No Matching Jobs Found</h3>
+                <p class="empty-state-desc">Try clearing your search query or selecting a different duration filter.</p>
+            </div>
+
+        {% else %}
+            <!-- EMPTY STATE -->
+            <div class="empty-state-box" style="padding: 60px 20px;">
+                <span class="empty-state-icon">💼</span>
+                <h2 class="empty-state-title">You Haven't Posted Any Jobs Yet</h2>
+                <p class="empty-state-desc">
+                    Connect with enthusiastic, verified students from top universities. Post your first job opening in less than 2 minutes.
+                </p>
+                <a href="{% url 'job_post' %}" class="btn btn-primary btn-lg" style="margin-top: 10px;">
+                    + Post Your First Job
+                </a>
+            </div>
+        {% endif %}
+
+    </main>
+
+    <script src="{% static 'js/customer_portal.js' %}"></script>
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Manage Moderation Reports{% endblock %}
+{% block breadcrumb %}Moderation Reports{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">Content Moderation & Reports 🛡️</h1>
+        <p class="page-subtitle">Investigate community reports, resolve dispute tickets, enforce safety guidelines, and log moderation actions.</p>
+    </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card">
+    <div class="filter-left">
+        <!-- Status Filter Pills -->
+        <div class="filter-pills">
+            <a href="{% url 'admin_reports' %}?status=all{% if search_q %}&q={{ search_q }}{% endif %}{% if type_filter != 'all' %}&type={{ type_filter }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'all' or not status_filter %}active{% endif %}">
+                <span>All Reports</span>
+                <span class="pill-count">{{ total_count }}</span>
+            </a>
+            <a href="{% url 'admin_reports' %}?status=Pending{% if search_q %}&q={{ search_q }}{% endif %}{% if type_filter != 'all' %}&type={{ type_filter }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Pending' %}active{% endif %}">
+                <span>🚨 Pending</span>
+                <span class="pill-count">{{ pending_count }}</span>
+            </a>
+            <a href="{% url 'admin_reports' %}?status=Investigating{% if search_q %}&q={{ search_q }}{% endif %}{% if type_filter != 'all' %}&type={{ type_filter }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Investigating' %}active{% endif %}">
+                <span>🔍 In Progress</span>
+                <span class="pill-count">{{ investigating_count }}</span>
+            </a>
+            <a href="{% url 'admin_reports' %}?status=Resolved{% if search_q %}&q={{ search_q }}{% endif %}{% if type_filter != 'all' %}&type={{ type_filter }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Resolved' %}active{% endif %}">
+                <span>✅ Resolved</span>
+                <span class="pill-count">{{ resolved_count }}</span>
+            </a>
+            <a href="{% url 'admin_reports' %}?status=Dismissed{% if search_q %}&q={{ search_q }}{% endif %}{% if type_filter != 'all' %}&type={{ type_filter }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'Dismissed' %}active{% endif %}">
+                <span>📁 Dismissed</span>
+                <span class="pill-count">{{ dismissed_count }}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Type Filter -->
+    <div class="filter-right">
+        <form method="GET" action="{% url 'admin_reports' %}" style="display: flex; gap: 8px;">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <select name="type" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all">All Report Types</option>
+                {% for r_code, r_name in report_types %}
+                    <option value="{{ r_code }}" {% if type_filter == r_code %}selected{% endif %}>{{ r_name }}</option>
+                {% endfor %}
+            </select>
+            <div class="search-input-wrap">
+                <span class="search-icon-pos">🔍</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search reason, reporter, entity...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if search_q or type_filter != 'all' or status_filter != 'all' %}
+                <a href="{% url 'admin_reports' %}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- REPORTS DATA TABLE -->
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="table-card-title">
+            <span>Moderation Queue</span>
+            <span class="badge badge-student">{{ reports|length }} Tickets</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Ticket ID & Reason</th>
+                    <th>Reported Entity / Target</th>
+                    <th>Reporter</th>
+                    <th>Report Status</th>
+                    <th>Action Taken</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rep in reports %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--text-primary);">#{{ rep.id }} &bull; {{ rep.get_reason_display }}</div>
+                        <div style="font-size: 12px; color: var(--primary); font-weight: 600;">
+                            📌 {{ rep.get_report_type_display }}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                            Filed {{ rep.created_at|date:"M d, Y H:i" }}
+                        </div>
+                    </td>
+                    <td>
+                        {% if rep.reported_user %}
+                            <div class="user-cell">
+                                <div class="user-cell-avatar">
+                                    {{ rep.reported_user.username|slice:":1"|upper }}
+                                </div>
+                                <div class="user-cell-info">
+                                    <span class="user-cell-name">{{ rep.reported_user.username }}</span>
+                                    <span class="user-cell-sub">
+                                        {% if rep.reported_user.user_type == 'student' %}
+                                            👨‍🎓 Student: {{ rep.reported_user.student_profile.full_name|default:'' }}
+                                        {% elif rep.reported_user.user_type == 'customer' %}
+                                            🏢 Employer: {{ rep.reported_user.customer_profile.full_name|default:'' }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        {% elif rep.reported_job %}
+                            <div style="font-weight: 700; color: var(--text-primary);">💼 {{ rep.reported_job.job_title }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">
+                                Employer: {% if rep.reported_job.customer %}{{ rep.reported_job.customer.username }}{% else %}Unassigned{% endif %}
+                            </div>
+
+                        {% elif rep.reported_review %}
+                            <div style="font-weight: 700;">⭐ Review ({{ rep.reported_review.rating }} Stars)</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">{{ rep.reported_review.review_comment|truncatechars:35 }}</div>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-size: 13px;">General Platform Issue</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-weight: 600;">{{ rep.reporter.username }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">📧 {{ rep.reporter.email }}</div>
+                    </td>
+                    <td>
+                        {% if rep.status == 'Pending' %}
+                            <span class="badge badge-pending"><span class="status-dot status-dot-amber"></span> Pending</span>
+                        {% elif rep.status == 'Investigating' %}
+                            <span class="badge badge-shortlisted"><span class="status-dot status-dot-blue"></span> Investigating</span>
+                        {% elif rep.status == 'Resolved' %}
+                            <span class="badge badge-verified"><span class="status-dot status-dot-green"></span> Resolved</span>
+                        {% elif rep.status == 'Dismissed' %}
+                            <span class="badge badge-inactive">📁 Dismissed</span>
+                        {% else %}
+                            <span class="badge badge-inactive">{{ rep.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if rep.action_taken and rep.action_taken != 'None' %}
+                            <span class="badge badge-rejected" style="font-size: 11px;">⚡ {{ rep.get_action_taken_display }}</span>
+                        {% else %}
+                            <span style="font-size: 12px; color: var(--text-muted);">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <!-- VIEW & RESOLVE MODAL -->
+                            <button type="button" class="btn btn-sm btn-primary" 
+                                    onclick="openResolveModal('{{ rep.id }}', '{{ rep.get_reason_display|escapejs }}', '{{ rep.get_report_type_display|escapejs }}', '{{ rep.reporter.username|escapejs }}', '{{ rep.description|escapejs }}', '{{ rep.status|escapejs }}', '{{ rep.action_taken|escapejs }}', '{{ rep.admin_notes|default:""|escapejs }}')"
+                                    title="Take Moderation Action">
+                                ⚖️ Review & Resolve
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">🛡️</div>
+                            <div class="empty-title">No Reports Found</div>
+                            <div class="empty-subtitle">Great job! There are no moderation reports matching your filters.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: RESOLVE & MODERATE REPORT
+     ========================================================= -->
+<div class="modal-overlay" id="resolveReportModal">
+    <div class="modal-box modal-box-lg">
+        <form method="POST" action="" id="resolveReportForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title" id="resolveReportTitle">Report Resolution</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('resolveReportModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Report Info Box -->
+                <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span id="resolveReason" style="font-weight: 800; color: var(--text-primary);"></span>
+                        <span id="resolveType" class="badge badge-student"></span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+                        Reported by: <strong id="resolveReporter"></strong>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Reporter's Complaint Description:</div>
+                    <div id="resolveDesc" style="font-size: 13px; color: var(--text-primary); background: #ffffff; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); white-space: pre-wrap;"></div>
+                </div>
+
+                <!-- Resolution Form Fields -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="id_report_status">Ticket Status <span style="color: var(--danger);">*</span></label>
+                        <select name="status" id="id_report_status" class="form-select" required>
+                            {% for st_val, st_label in status_choices %}
+                                <option value="{{ st_val }}">{{ st_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_action_taken">Administrative Action</label>
+                        <select name="action_taken" id="id_action_taken" class="form-select">
+                            {% for act_val, act_label in action_choices %}
+                                <option value="{{ act_val }}">{{ act_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="id_admin_notes">Internal Admin Notes & Findings</label>
+                        <textarea name="admin_notes" id="id_admin_notes" class="form-textarea" rows="3" placeholder="Log internal reasoning, warning messages sent, or resolution notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('resolveReportModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Resolution</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openResolveModal(id, reason, type, reporter, desc, status, actionTaken, adminNotes) {
+        document.getElementById('resolveReportTitle').textContent = 'Resolve Report #' + id;
+        document.getElementById('resolveReason').textContent = reason;
+        document.getElementById('resolveType').textContent = type;
+        document.getElementById('resolveReporter').textContent = reporter;
+        document.getElementById('resolveDesc').textContent = desc;
+
+        document.getElementById('id_report_status').value = status || 'Resolved';
+        document.getElementById('id_action_taken').value = actionTaken || 'None';
+        document.getElementById('id_admin_notes').value = adminNotes || '';
+
+        document.getElementById('resolveReportForm').action = '/admin-dashboard/reports/' + id + '/resolve/';
+        openModal('resolveReportModal');
+    }
+</script>
+{% endblock %}

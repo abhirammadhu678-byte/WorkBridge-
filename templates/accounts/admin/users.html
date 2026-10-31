@@ -1,0 +1,491 @@
+{% extends "accounts/admin/base_admin.html" %}
+
+{% block title %}Manage Platform Users{% endblock %}
+{% block breadcrumb %}User Management{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header-admin">
+    <div>
+        <h1 class="page-title">User Management Directory 👥</h1>
+        <p class="page-subtitle">Manage registered students, employer customers, and staff administrator credentials.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary" onclick="openModal('createUserModal')">
+            <span>+ Create New User</span>
+        </button>
+    </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card">
+    <div class="filter-left">
+        <!-- Role Filter Pills -->
+        <div class="filter-pills">
+            <a href="{% url 'admin_users' %}?role=all{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="filter-pill {% if role_filter == 'all' %}active{% endif %}">
+                <span>All Users</span>
+                <span class="pill-count">{{ total_users_count }}</span>
+            </a>
+            <a href="{% url 'admin_users' %}?role=student{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="filter-pill {% if role_filter == 'student' %}active{% endif %}">
+                <span>👨‍🎓 Students</span>
+                <span class="pill-count">{{ student_count }}</span>
+            </a>
+            <a href="{% url 'admin_users' %}?role=customer{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="filter-pill {% if role_filter == 'customer' %}active{% endif %}">
+                <span>🏢 Customers</span>
+                <span class="pill-count">{{ customer_count }}</span>
+            </a>
+            <a href="{% url 'admin_users' %}?role=admin{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="filter-pill {% if role_filter == 'admin' %}active{% endif %}">
+                <span>🛡️ Staff</span>
+                <span class="pill-count">{{ admin_count }}</span>
+            </a>
+            {% if inactive_count > 0 %}
+            <a href="{% url 'admin_users' %}?status=inactive{% if search_q %}&q={{ search_q }}{% endif %}" 
+               class="filter-pill {% if status_filter == 'inactive' %}active{% endif %}">
+                <span>🚫 Inactive</span>
+                <span class="pill-count">{{ inactive_count }}</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search & Status Filter -->
+    <div class="filter-right">
+        <form method="GET" action="{% url 'admin_users' %}" style="display: flex; gap: 8px;">
+            <input type="hidden" name="role" value="{{ role_filter }}">
+            <select name="status" class="form-select" style="width: auto; padding: 8px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated Only</option>
+                <option value="verified" {% if status_filter == 'verified' %}selected{% endif %}>Verified Students</option>
+                <option value="unverified" {% if status_filter == 'unverified' %}selected{% endif %}>Unverified Students</option>
+            </select>
+            <div class="search-input-wrap">
+                <span class="search-icon-pos">🔍</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search username, name, email...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if search_q or status_filter != 'all' or role_filter != 'all' %}
+                <a href="{% url 'admin_users' %}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- USERS DATA TABLE -->
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="table-card-title">
+            <span>User Accounts</span>
+            <span class="badge badge-student">{{ users|length }} Listed</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>User & Credentials</th>
+                    <th>Role</th>
+                    <th>Full Name & Contact</th>
+                    <th>Profile Details</th>
+                    <th>Account Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-cell-avatar">
+                                {% if u.user_type == 'student' and u.student_profile.profile_photo %}
+                                    <img src="{{ u.student_profile.profile_photo.url }}" alt="{{ u.username }}">
+                                {% else %}
+                                    {{ u.username|slice:":1"|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="user-cell-info">
+                                <span class="user-cell-name">{{ u.username }}</span>
+                                <span class="user-cell-sub">📧 {{ u.email }}</span>
+                                <span class="user-cell-sub" style="font-size: 11px;">Joined {{ u.date_joined|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if u.user_type == 'student' %}
+                            <span class="badge badge-student">👨‍🎓 Student</span>
+                        {% elif u.user_type == 'customer' %}
+                            <span class="badge badge-customer">🏢 Employer</span>
+                        {% elif u.user_type == 'admin' or u.is_staff or u.is_superuser %}
+                            <span class="badge badge-admin">🛡️ Administrator</span>
+                        {% else %}
+                            <span class="badge badge-inactive">{{ u.user_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.user_type == 'student' and u.student_profile %}
+                            <div style="font-weight: 700;">{{ u.student_profile.full_name|default:u.username }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">📞 {{ u.student_profile.mobile|default:"No phone" }}</div>
+                        {% elif u.user_type == 'customer' and u.customer_profile %}
+                            <div style="font-weight: 700;">{{ u.customer_profile.full_name|default:u.username }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">📞 {{ u.customer_profile.mobile_number|default:"No phone" }}</div>
+                        {% else %}
+                            <div style="font-weight: 700;">{{ u.first_name }} {{ u.last_name }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Staff User</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.user_type == 'student' and u.student_profile %}
+                            <div style="font-size: 13px; font-weight: 600;">{{ u.student_profile.college|default:"No College" }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">
+                                {{ u.student_profile.district|default:"" }}{% if u.student_profile.place %}, {{ u.student_profile.place.name }}{% endif %}
+                            </div>
+                        {% elif u.user_type == 'customer' and u.customer_profile %}
+                            <div style="font-size: 13px; color: var(--text-secondary);">{{ u.customer_profile.address|default:"No address set"|truncatechars:40 }}</div>
+                        {% else %}
+                            <div style="font-size: 12px; color: var(--text-muted);">Superuser / Staff Admin</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            {% if u.is_active %}
+                                <span class="badge badge-active">
+                                    <span class="status-dot status-dot-green"></span> Active
+                                </span>
+                            {% else %}
+                                <span class="badge badge-rejected">
+                                    <span class="status-dot status-dot-red"></span> Deactivated
+                                </span>
+                            {% endif %}
+
+                            {% if u.user_type == 'student' %}
+                                {% if u.student_profile.is_verified %}
+                                    <span class="badge badge-verified" style="font-size: 11px;">Verified</span>
+                                {% elif u.student_profile.is_rejected %}
+                                    <span class="badge badge-rejected" style="font-size: 11px;">Rejected</span>
+                                {% else %}
+                                    <span class="badge badge-pending" style="font-size: 11px;">Pending ID</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <!-- EDIT BUTTON -->
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                    onclick="openEditUserModal('{{ u.id }}', '{{ u.username|escapejs }}', '{{ u.email|escapejs }}', '{{ u.user_type }}', '{{ u.is_active|yesno:"true,false" }}', '{% if u.user_type == "student" %}{{ u.student_profile.full_name|default:""|escapejs }}{% elif u.user_type == "customer" %}{{ u.customer_profile.full_name|default:""|escapejs }}{% else %}{{ u.first_name }} {{ u.last_name }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.mobile|default:""|escapejs }}{% elif u.user_type == "customer" %}{{ u.customer_profile.mobile_number|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.college|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.course|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.semester|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.district|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.place.name|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.address|default:""|escapejs }}{% elif u.user_type == "customer" %}{{ u.customer_profile.address|default:""|escapejs }}{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.is_verified|yesno:"true,false" }}{% else %}false{% endif %}', '{% if u.user_type == "student" %}{{ u.student_profile.is_rejected|yesno:"true,false" }}{% else %}false{% endif %}')"
+                                    title="Edit User Details">
+                                ✏️ Edit
+                            </button>
+
+                            <!-- ACTIVATE / DEACTIVATE BUTTON -->
+                            {% if u != request.user %}
+                                <a href="{% url 'admin_user_toggle_status' u.id %}" 
+                                   class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                   title="{% if u.is_active %}Deactivate Account{% else %}Activate Account{% endif %}">
+                                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                                </a>
+
+                                <!-- DELETE BUTTON -->
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="openDeleteModal('{{ u.id }}', '{{ u.username|escapejs }}', '{{ u.user_type|escapejs }}')"
+                                        title="Delete User">
+                                    🗑️
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">👥</div>
+                            <div class="empty-title">No Users Found</div>
+                            <div class="empty-subtitle">Try adjusting your filters or search keywords.</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: CREATE NEW USER
+     ========================================================= -->
+<div class="modal-overlay" id="createUserModal">
+    <div class="modal-box modal-box-lg">
+        <form method="POST" action="{% url 'admin_user_create' %}" id="createUserForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">+ Create New User</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('createUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="id_user_type">User Role <span style="color: var(--danger);">*</span></label>
+                        <select name="user_type" id="id_user_type" class="form-select" onchange="toggleCreateRoleFields(this.value)" required>
+                            <option value="student">👨‍🎓 Student</option>
+                            <option value="customer">🏢 Employer / Customer</option>
+                            <option value="admin">🛡️ Staff Administrator</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_username">Username <span style="color: var(--danger);">*</span></label>
+                        <input type="text" name="username" id="id_username" class="form-input" required placeholder="Unique username">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_email">Email Address <span style="color: var(--danger);">*</span></label>
+                        <input type="email" name="email" id="id_email" class="form-input" required placeholder="user@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_full_name">Full Name <span style="color: var(--danger);">*</span></label>
+                        <input type="text" name="full_name" id="id_full_name" class="form-input" required placeholder="John Doe">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_password">Password (Min 6 chars) <span style="color: var(--danger);">*</span></label>
+                        <input type="password" name="password" id="id_password" class="form-input" minlength="6" required placeholder="••••••••">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_confirm_password">Confirm Password <span style="color: var(--danger);">*</span></label>
+                        <input type="password" name="confirm_password" id="id_confirm_password" class="form-input" minlength="6" required placeholder="••••••••">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_mobile">Mobile Number</label>
+                        <input type="text" name="mobile" id="id_mobile" class="form-input" placeholder="e.g. 9876543210">
+                    </div>
+
+                    <div class="form-group" id="createDistrictGroup">
+                        <label class="form-label" for="id_district">District</label>
+                        <select name="district" id="id_district" class="form-select">
+                            <option value="">-- Select District --</option>
+                            {% for dist_val, dist_name in kerala_districts %}
+                                <option value="{{ dist_val }}">{{ dist_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="createPlaceGroup">
+                        <label class="form-label" for="id_place">City / Place</label>
+                        <input type="text" name="place" id="id_place" class="form-input" placeholder="e.g. Kochi">
+                    </div>
+
+                    <!-- Student Specific Fields -->
+                    <div class="form-group student-field" id="createCollegeGroup">
+                        <label class="form-label" for="id_college">College / Institute</label>
+                        <input type="text" name="college" id="id_college" class="form-input" placeholder="College Name">
+                    </div>
+
+                    <div class="form-group student-field" id="createCourseGroup">
+                        <label class="form-label" for="id_course">Course / Degree</label>
+                        <input type="text" name="course" id="id_course" class="form-input" placeholder="e.g. B.Tech Computer Science">
+                    </div>
+
+                    <div class="form-group student-field" id="createSemGroup">
+                        <label class="form-label" for="id_semester">Semester</label>
+                        <input type="text" name="semester" id="id_semester" class="form-input" placeholder="e.g. S6">
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <div style="display: flex; gap: 24px;">
+                            <label class="form-checkbox-wrap">
+                                <input type="checkbox" name="is_active" class="form-checkbox" checked>
+                                <span style="font-size: 13.5px; font-weight: 600;">Active Account</span>
+                            </label>
+
+                            <label class="form-checkbox-wrap student-field" id="createVerifiedCheckWrap">
+                                <input type="checkbox" name="is_verified" class="form-checkbox">
+                                <span style="font-size: 13.5px; font-weight: 600;">Mark Student Verified</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: EDIT USER
+     ========================================================= -->
+<div class="modal-overlay" id="editUserModal">
+    <div class="modal-box modal-box-lg">
+        <form method="POST" action="" id="editUserForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title" id="editUserModalTitle">Edit User</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('editUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="edit_full_name">Full Name <span style="color: var(--danger);">*</span></label>
+                        <input type="text" name="full_name" id="edit_full_name" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_email">Email Address <span style="color: var(--danger);">*</span></label>
+                        <input type="email" name="email" id="edit_email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edit_mobile">Mobile Number</label>
+                        <input type="text" name="mobile" id="edit_mobile" class="form-input">
+                    </div>
+
+                    <!-- Student Specific -->
+                    <div class="form-group edit-student-field" id="editCollegeGroup">
+                        <label class="form-label" for="edit_college">College</label>
+                        <input type="text" name="college" id="edit_college" class="form-input">
+                    </div>
+
+                    <div class="form-group edit-student-field" id="editCourseGroup">
+                        <label class="form-label" for="edit_course">Course</label>
+                        <input type="text" name="course" id="edit_course" class="form-input">
+                    </div>
+
+                    <div class="form-group edit-student-field" id="editSemGroup">
+                        <label class="form-label" for="edit_semester">Semester</label>
+                        <input type="text" name="semester" id="edit_semester" class="form-input">
+                    </div>
+
+                    <div class="form-group edit-student-field" id="editDistrictGroup">
+                        <label class="form-label" for="edit_district">District</label>
+                        <select name="district" id="edit_district" class="form-select">
+                            <option value="">-- Select District --</option>
+                            {% for dist_val, dist_name in kerala_districts %}
+                                <option value="{{ dist_val }}">{{ dist_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group edit-student-field" id="editPlaceGroup">
+                        <label class="form-label" for="edit_place">City / Place</label>
+                        <input type="text" name="place" id="edit_place" class="form-input">
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <label class="form-label" for="edit_address">Address</label>
+                        <textarea name="address" id="edit_address" class="form-textarea" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group form-grid-full">
+                        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                            <label class="form-checkbox-wrap">
+                                <input type="checkbox" name="is_active" id="edit_is_active" class="form-checkbox">
+                                <span style="font-size: 13.5px; font-weight: 600;">Active Account</span>
+                            </label>
+
+                            <label class="form-checkbox-wrap edit-student-field" id="editVerifiedCheckWrap">
+                                <input type="checkbox" name="is_verified" id="edit_is_verified" class="form-checkbox">
+                                <span style="font-size: 13.5px; font-weight: 600;">Verified Student</span>
+                            </label>
+
+                            <label class="form-checkbox-wrap edit-student-field" id="editRejectedCheckWrap">
+                                <input type="checkbox" name="is_rejected" id="edit_is_rejected" class="form-checkbox">
+                                <span style="font-size: 13.5px; font-weight: 600; color: var(--danger);">Rejected ID</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: DELETE USER CONFIRMATION
+     ========================================================= -->
+<div class="modal-overlay" id="deleteUserModal">
+    <div class="modal-box">
+        <form method="POST" action="" id="deleteUserForm">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--danger);">Delete User Account</h3>
+                <button type="button" class="modal-close-btn" onclick="closeModal('deleteUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: var(--text-secondary);">
+                    Are you sure you want to permanently delete the account for <strong id="deleteUserUsername" style="color: var(--text-primary);"></strong> (<span id="deleteUserRole"></span>)?
+                </p>
+                <p style="font-size: 13px; color: var(--danger); margin-top: 10px; font-weight: 600;">
+                    ⚠️ Warning: All associated jobs, applications, portfolios, and reviews belonging to this user will be removed. This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteUserModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">Yes, Delete Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleCreateRoleFields(role) {
+        const studentFields = document.querySelectorAll('.student-field');
+        studentFields.forEach(el => {
+            el.style.display = (role === 'student') ? 'flex' : 'none';
+        });
+    }
+
+    function openEditUserModal(id, username, email, role, isActive, fullName, mobile, college, course, sem, district, place, address, isVerified, isRejected) {
+        document.getElementById('editUserModalTitle').textContent = 'Edit User: ' + username;
+        document.getElementById('editUserForm').action = '/admin-dashboard/users/' + id + '/edit/';
+        
+        document.getElementById('edit_full_name').value = fullName || '';
+        document.getElementById('edit_email').value = email || '';
+        document.getElementById('edit_mobile').value = mobile || '';
+        document.getElementById('edit_address').value = address || '';
+        document.getElementById('edit_is_active').checked = (isActive === 'true');
+
+        const isStudent = (role === 'student');
+        const studentFields = document.querySelectorAll('.edit-student-field');
+        studentFields.forEach(el => {
+            el.style.display = isStudent ? 'flex' : 'none';
+        });
+
+        if (isStudent) {
+            document.getElementById('edit_college').value = college || '';
+            document.getElementById('edit_course').value = course || '';
+            document.getElementById('edit_semester').value = sem || '';
+            document.getElementById('edit_district').value = district || '';
+            document.getElementById('edit_place').value = place || '';
+            document.getElementById('edit_is_verified').checked = (isVerified === 'true');
+            document.getElementById('edit_is_rejected').checked = (isRejected === 'true');
+        }
+
+        openModal('editUserModal');
+    }
+
+    function openDeleteModal(id, username, role) {
+        document.getElementById('deleteUserUsername').textContent = username;
+        document.getElementById('deleteUserRole').textContent = role;
+        document.getElementById('deleteUserForm').action = '/admin-dashboard/users/' + id + '/delete/';
+        openModal('deleteUserModal');
+    }
+</script>
+{% endblock %}

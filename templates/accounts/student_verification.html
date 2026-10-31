@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Verification | WorkBridge</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/global_ui.css' %}">
+    <link rel="stylesheet" href="{% static 'css/student_portal.css' %}">
+</head>
+<body>
+
+    <!-- Unified Student Navigation -->
+    {% include "components/navbar_student.html" %}
+
+    <main class="portal-container" style="max-width: 640px;">
+
+        <!-- Flash Messages -->
+        {% include "components/alerts.html" %}
+
+        <div style="margin-bottom: 20px;">
+            <a href="{% url 'student_dashboard' %}" class="btn btn-sm btn-outline">
+                &larr; Back to Dashboard
+            </a>
+        </div>
+
+        <div class="portal-card" style="padding: 32px 28px;">
+            <div style="text-align: center; margin-bottom: 28px;">
+                <div style="width: 60px; height: 60px; background: #eff6ff; color: #2563eb; border-radius: 50%; font-size: 28px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
+                    🪪
+                </div>
+                <h1 class="page-header-title" style="font-size: 24px; text-align: center;">Student ID Verification</h1>
+                <p class="page-header-subtitle" style="margin: 6px auto 0; text-align: center;">
+                    Submit your college credentials to unlock verified status and apply for exclusive student opportunities.
+                </p>
+            </div>
+
+            {% if request.user.student_profile.is_verified %}
+                <div style="background: var(--success-light); border: 1px solid var(--success-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: var(--success-text);">
+                    <span style="font-size: 20px;">✓</span>
+                    <div>
+                        <strong>Verified Student</strong>
+                        <p style="font-size: 13px; margin-top: 2px;">Your college ID has been officially approved by the administrator.</p>
+                    </div>
+                </div>
+            {% elif request.user.student_profile.is_rejected %}
+                <div style="background: var(--danger-light); border: 1px solid var(--danger-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: var(--danger-text);">
+                    <span style="font-size: 20px;">✕</span>
+                    <div>
+                        <strong>Verification Declined</strong>
+                        <p style="font-size: 13px; margin-top: 2px;">Please re-upload a clear, readable photo or PDF of your student ID card.</p>
+                    </div>
+                </div>
+            {% elif request.user.student_profile.college_id %}
+                <div style="background: var(--warning-light); border: 1px solid var(--warning-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: var(--warning-text);">
+                    <span style="font-size: 20px;">⏳</span>
+                    <div>
+                        <strong>Verification Under Review</strong>
+                        <p style="font-size: 13px; margin-top: 2px;">Your documents have been submitted and are being reviewed by administrators.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="form-label" for="student_name">Full Student Name <span style="color: var(--danger);">*</span></label>
+                    <input type="text" id="student_name" class="form-input" name="student_name" value="{{ request.user.student_profile.full_name|default:'' }}" required placeholder="e.g., Alex Johnson">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="college_name">College / University Name <span style="color: var(--danger);">*</span></label>
+                    <input type="text" id="college_name" class="form-input" name="college_name" value="{{ request.user.student_profile.college|default:'' }}" required placeholder="e.g., Stanford University">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="college_id">Upload Student ID Card Document <span style="color: var(--danger);">*</span></label>
+                    {% if request.user.student_profile.college_id %}
+                        <div style="margin-bottom: 8px; font-size: 13px; color: var(--slate-600);">
+                            Current file: <a href="{{ request.user.student_profile.college_id.url }}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: underline;">View Uploaded ID ↗</a>
+                        </div>
+                    {% endif %}
+                    <input type="file" id="college_id" class="form-input" name="college_id" accept="image/*,.pdf" {% if not request.user.student_profile.college_id %}required{% endif %}>
+                    <small style="color: var(--slate-400); font-size: 12px; margin-top: 4px; display: block;">Accepted file formats: JPG, PNG, WEBP, PDF (Max 10MB)</small>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 28px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        Submit for Verification
+                    </button>
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+    <script src="{% static 'js/global_ui.js' %}"></script>
+</body>
+</html>
